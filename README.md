@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# README.md
 
-## Getting Started
+## PueriCare – MVP 1
 
-First, run the development server:
+**Objetivo** – Prototipar um sistema de registro de consultas de puericultura para crianças de 0 a 5 anos e 11 meses.
 
+**Stack** – Next.js (App Router), React, TypeScript, Tailwind CSS, Firebase Auth, Firestore, Storage, Zod, React Hook Form, Vitest, React Testing Library, Playwright, Vercel.
+
+**Requisitos locais**
+- Node v22.14.0, npm v11.18.0
+- `npm install` para dependências
+
+**Instalação**
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd app
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Execução**
+```bash
+npm run dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Scripts**
+- `dev` – development server
+- `lint` – linting (ESLint)
+- `typecheck` – verificação de tipos TypeScript
+- `test` – testes unitários (Vitest)
+- `test:e2e` – testes end‑to‑end (Playwright)
+- `build` – build de produção
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Variáveis de ambiente** – veja `.env.example`.
 
-## Learn More
+**Segurança** – Consulte `SECURITY.md`.
 
-To learn more about Next.js, take a look at the following resources:
+**Status atual** – Estrutura inicial criada, página home pronta.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Documentação
+- `PRD.md` – escopo do MVP
+- `ARCHITECTURE.md` – visão geral da arquitetura
+- `SECURITY.md` – políticas de segurança e LGPD
+- `ROADMAP.md` – plano das próximas fases
+- `FUTURE.md` – funcionalidades fora do MVP
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Licença
+Este é um protótipo interno para avaliação clínica.
