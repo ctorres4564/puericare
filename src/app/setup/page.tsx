@@ -5,30 +5,15 @@ export const dynamic = 'force-dynamic';
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { createUserProfile } from '@/services/userService';
+import { setupSchema as schema, type SetupFormValues as FormValues } from '@/lib/validation/setup';
 import type { UserRole } from '@/lib/types';
 import { Input }  from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Alert }  from '@/components/ui/Alert';
 import { Card }   from '@/components/ui/Card';
-
-/* ─── Schema ─────────────────────────────────────────────────── */
-// ADMIN não é uma opção: as regras do Firestore (firestore.rules) rejeitam
-// a criação de um usuário com role ADMIN pelo cliente. O primeiro admin é
-// criado manualmente no console do Firebase — veja SECURITY.md.
-const schema = z.object({
-  displayName: z.string().min(3, 'Informe o nome completo'),
-  email:       z.string().email('E-mail inválido'),
-  password:    z.string().min(6, 'Mínimo 6 caracteres'),
-  role:        z.enum(['PROFESSIONAL', 'CAREGIVER']),
-  crm:         z.string().optional(),
-  specialty:   z.string().optional(),
-});
-
-type FormValues = z.infer<typeof schema>;
 
 /* ─── Componente ──────────────────────────────────────────────── */
 export default function SetupPage() {

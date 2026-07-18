@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { listChildrenByProfessional, deactivateChild } from '@/services/childService';
+import { filterActiveChildren, calculateAge } from '@/lib/children/childList';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -17,17 +18,6 @@ const sexLabels: Record<SexAtBirth, string> = {
   other: 'Outro',
   not_informed: 'Não informado',
 };
-
-function calculateAge(birthDate: string): string {
-  const birth = new Date(birthDate);
-  const now = new Date();
-  let months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
-  if (now.getDate() < birth.getDate()) months -= 1;
-  if (months < 1) return 'recém-nascido(a)';
-  if (months < 24) return `${months} ${months === 1 ? 'mês' : 'meses'}`;
-  const years = Math.floor(months / 12);
-  return `${years} ${years === 1 ? 'ano' : 'anos'}`;
-}
 
 export default function PacientesPage() {
   const { userProfile } = useAuth();
@@ -45,12 +35,7 @@ export default function PacientesPage() {
       .finally(() => setLoading(false));
   }, [userProfile]);
 
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    return children
-      .filter((c) => c.active)
-      .filter((c) => !term || c.fullName.toLowerCase().includes(term));
-  }, [children, search]);
+  const filtered = useMemo(() => filterActiveChildren(children, search), [children, search]);
 
   const handleDeactivate = async (id: string) => {
     setConfirmingId(null);
