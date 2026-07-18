@@ -1,16 +1,32 @@
-import { getFirestore } from 'firebase/firestore';
-import { initializeApp, getApps, getApp } from 'firebase/app';
+/**
+ * firestore.ts — Instância do Firestore com lazy initialization.
+ *
+ * Reutiliza o app Firebase já inicializado pelo client.ts.
+ */
 
-const firebaseConfig = {
-  apiKey:            process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? '',
-  authDomain:        process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? '',
-  projectId:         process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? '',
-  storageBucket:     process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? '',
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? '',
-  appId:             process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? '',
-};
+import { getFirestore, Firestore } from 'firebase/firestore';
+import { getFirebaseAuth } from '@/lib/firebase/client';
 
-// Evita re-inicializar o app se já estiver inicializado (hot-reload do Next.js)
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+let _db: Firestore | null = null;
 
-export const db = getFirestore(app);
+/**
+ * Retorna a instância do Firestore, inicializando se necessário.
+ * Usa o mesmo Firebase App do client.ts (via getFirebaseAuth que chama getFirebaseApp).
+ */
+export function getFirebaseDb(): Firestore {
+  if (_db) return _db;
+  // getFirebaseAuth() garante que o app está inicializado
+  const auth = getFirebaseAuth();
+  _db = getFirestore(auth.app);
+  return _db;
+}
+
+/**
+ * Atalho para compatibilidade — use getFirebaseDb() quando possível.
+ * @deprecated Prefira importar getFirebaseDb e chamar a função.
+ */
+export const db = new Proxy({} as Firestore, {
+  get(_target, prop) {
+    return getFirebaseDb()[prop as keyof Firestore];
+  },
+});

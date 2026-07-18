@@ -1,10 +1,3 @@
-/**
- * userService.ts
- *
- * Operações CRUD para perfis de usuário no Firestore.
- * Coleção: `users`
- */
-
 import {
   doc,
   getDoc,
@@ -13,7 +6,8 @@ import {
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase/firestore';
+import { getFirebaseDb } from '@/lib/firebase/firestore';
+import { stripUndefined } from '@/lib/firebase/utils';
 import type { UserProfile, CreateUserProfilePayload } from '@/lib/types';
 
 const COLLECTION = 'users';
@@ -35,19 +29,23 @@ export async function createUserProfile(
     updatedAt: now,
   };
 
+  const db = getFirebaseDb();
   await setDoc(doc(db, COLLECTION, uid), {
-    ...profile,
+    // Remove campos undefined antes de salvar
+    ...stripUndefined(profile as unknown as Record<string, unknown>),
     _serverCreatedAt: serverTimestamp(),
   });
 
   return profile;
 }
 
+
 /**
  * Busca o perfil de um usuário pelo seu UID.
  * Retorna null se o documento não existir.
  */
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+  const db = getFirebaseDb();
   const snap = await getDoc(doc(db, COLLECTION, uid));
   if (!snap.exists()) return null;
 
@@ -77,6 +75,7 @@ export async function updateUserProfile(
   uid: string,
   updates: Partial<Omit<UserProfile, 'uid' | 'createdAt'>>
 ): Promise<void> {
+  const db = getFirebaseDb();
   await updateDoc(doc(db, COLLECTION, uid), {
     ...updates,
     updatedAt: new Date().toISOString(),

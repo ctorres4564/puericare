@@ -2,11 +2,25 @@
 
 ## Política de Segurança
 
+Este documento descreve o que **está de fato implementado**. Itens que ainda
+não existem estão listados em "Pendências", não aqui.
+
 - **Autenticação**: Firebase Authentication com email/senha. Tokens são armazenados apenas no `localStorage` e renovados automaticamente.
-- **Regras do Firestore**: Cada usuário só pode ler/escrever documentos que possuam o campo `ownerId` igual ao seu UID.
-- **Proteção de Dados Sensíveis**: Campos como CPF, endereço e histórico médico são criptografados antes de serem gravados usando `crypto.subtle` (Web Crypto API). Os dados são descriptografados apenas no cliente autenticado.
-- **LGPD / GDPR**: Consentimento de coleta é registrado no documento `users/{uid}`. Dados podem ser apagados mediante solicitação (`right to be forgotten`).
-- **Variáveis de Ambiente**: Nunca comitam chaves (`*.env*` está no `.gitignore`). Use o arquivo `.env.example` como modelo.
+- **Regras do Firestore** (`firestore.rules`, versionado no repo): acesso por papel (`ADMIN`, `PROFESSIONAL`, `CAREGIVER`), não por `ownerId`.
+  - `users/{uid}`: cada usuário lê/cria/edita apenas o próprio documento; não pode alterar o próprio `role` ou `active`; **não é possível criar um usuário com `role == 'ADMIN'` pelo cliente**. ADMIN pode ler/editar/apagar qualquer perfil.
+  - `children/{id}`: leitura para o `professionalId` dono, para UIDs em `caregiverIds`, ou ADMIN. Criação apenas por PROFESSIONAL, sempre com `professionalId` igual ao próprio UID. `professionalId` é imutável após criado.
+  - Qualquer coleção/documento sem regra explícita é **negado por padrão** (substitui o antigo modo de teste aberto).
+  - Deploy: `firebase deploy --only firestore:rules` (requer `firebase-tools` e login na CLI), ou colar o conteúdo de `firestore.rules` em Firebase Console → Firestore → Regras.
+- **Bootstrap do primeiro ADMIN**: não existe rota ou script automatizado. O primeiro admin é criado manualmente: cadastre o usuário como PROFESSIONAL ou CAREGIVER (rota `/setup`, apenas em desenvolvimento) e depois edite o campo `role` para `ADMIN` diretamente no Firebase Console.
+- **Rota `/setup`**: disponível apenas quando `NODE_ENV !== 'production'`; não oferece mais a opção de criar ADMIN.
+- **Variáveis de Ambiente**: Nunca commitar chaves (`*.env*` está no `.gitignore`). Use `.env.local.example` como modelo.
 - **Dependências**: Manter as dependências atualizadas (`npm audit fix`).
 - **Logs**: Não armazenar informações de identificação pessoal nos logs de servidor.
-- **Responsabilidade**: Este protótipo não deve ser usado em produção sem revisão de segurança adicional.
+- **Responsabilidade**: Este protótipo não deve receber dados reais de pacientes sem revisão de segurança adicional (ver Pendências).
+
+## Pendências (não implementado ainda)
+
+- Proteção de rotas do dashboard é apenas client-side (sem verificação de sessão/token no servidor).
+- Sem criptografia de campos sensíveis (CPF, histórico médico) — os tipos hoje não incluem CPF; se for adicionado, deve ser tratado antes de ir a produção.
+- Sem fluxo de consentimento LGPD nem "direito ao esquecimento" implementados.
+- Sem CI/CD, testes automatizados ou headers de segurança (CSP, HSTS etc.).

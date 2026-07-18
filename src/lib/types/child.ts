@@ -50,9 +50,11 @@ export interface Child {
   /** Nome social, se aplicável */
   socialName?: string;
 
-  /* ── Contato ── */
+  /* ── Responsável principal ── */
+  /** Nome completo do responsável principal pela criança */
+  caregiverName: string;
   /** Telefone de contato do responsável */
-  contactPhone?: string;
+  contactPhone: string;
   contactEmail?: string;
 
   /* ── Documentos ── */
