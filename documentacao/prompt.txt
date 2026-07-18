@@ -1,0 +1,457 @@
+
+Você será responsável por iniciar a implementação do projeto **PueriCare — MVP 1**.
+
+O projeto será construído do absoluto zero.
+
+## Objetivo do produto
+
+Criar um protótipo funcional para apoiar o registro de consultas de puericultura de crianças desde o nascimento até **5 anos e 11 meses**.
+
+O sistema será utilizado inicialmente em testes controlados por profissionais de saúde.
+
+Leia e siga integralmente:
+
+1. o arquivo `prd.txt`;
+2. o arquivo `skill.txt`.
+
+Não amplie o escopo definido nesses documentos..
+
+O projeto será construído do absoluto zero.
+
+## Objetivo do produto
+
+Criar um protótipo funcional para apoiar o registro de consultas de puericultura de crianças desde o nascimento até **5 anos e 11 meses**.
+
+O sistema será utilizado inicialmente em testes controlados por profissionais de saúde.
+
+Leia e siga integralmente:
+
+1. o PRD do PueriCare MVP 1;
+2. a skill `puericare-mvp1-implementation`.
+
+Não amplie o escopo definido nesses documentos.
+
+---
+
+# Escopo do MVP
+
+O sistema deve conter apenas:
+
+1. autenticação;
+2. dashboard simples;
+3. cadastro e gerenciamento de crianças;
+4. registro de consultas;
+5. acompanhamento de crescimento;
+6. checklist de desenvolvimento;
+7. assistente científico com RAG;
+8. geração e exportação de relatórios.
+
+Não implemente funcionalidades pós-MVP.
+
+---
+
+# Stack técnica
+
+Use:
+
+- Next.js com App Router;
+- React;
+- TypeScript em modo estrito;
+- Tailwind CSS;
+- Firebase Authentication;
+- Cloud Firestore;
+- Firebase Storage;
+- Zod para validação;
+- React Hook Form;
+- Vitest;
+- React Testing Library;
+- Playwright;
+- Vercel para deploy.
+
+Evite dependências desnecessárias.
+
+---
+
+# Regras clínicas e de segurança
+
+1. Não implemente diagnóstico automático.
+2. Não implemente prescrição de medicamentos.
+3. Não invente marcos do desenvolvimento ou recomendações clínicas.
+4. Conteúdos clínicos provisórios devem ser claramente identificados como pendentes de validação profissional.
+5. Toda resposta do assistente científico deve apresentar as fontes utilizadas.
+6. O assistente deve responder somente com base nos documentos científicos cadastrados.
+7. Relatórios gerados por IA devem ser revisados e confirmados pelo profissional.
+8. Cada usuário deve acessar somente os próprios pacientes, consultas e relatórios.
+9. Não armazene segredos, chaves ou credenciais no código.
+10. Não use dados clínicos reais durante o desenvolvimento.
+11. Dados clínicos devem usar exclusão lógica.
+12. Não registre informações clínicas sensíveis em logs.
+
+---
+
+# Primeira tarefa: Fase 0 — Preparação
+
+Nesta primeira execução, prepare a fundação documental e técnica do projeto.
+
+## 1. Verificação inicial
+
+Antes de alterar qualquer arquivo:
+
+- confirme a pasta atual;
+- verifique se já existe algum projeto;
+- execute `git status`;
+- identifique a branch atual, caso o Git já esteja configurado;
+- liste os arquivos existentes;
+- verifique a versão instalada do Node.js e do npm;
+- informe qualquer risco de sobrescrever arquivos existentes.
+
+Se a pasta contiver outro projeto, interrompa e informe o problema.
+
+---
+
+## 2. Inicialização do projeto
+
+Caso a pasta esteja adequada, crie um projeto Next.js utilizando:
+
+- App Router;
+- TypeScript;
+- Tailwind CSS;
+- ESLint;
+- diretório `src`;
+- alias de importação `@/*`.
+
+Não use JavaScript puro.
+
+Não use Pages Router.
+
+---
+
+## 3. Estrutura inicial
+
+Crie uma estrutura simples e organizada:
+
+```text
+src/
+├── app/
+│   ├── login/
+│   ├── dashboard/
+│   ├── patients/
+│   ├── assistant/
+│   ├── api/
+│   ├── layout.tsx
+│   └── page.tsx
+├── components/
+│   ├── ui/
+│   ├── layout/
+│   ├── forms/
+│   └── clinical/
+├── domains/
+│   ├── auth/
+│   ├── patients/
+│   ├── consultations/
+│   ├── growth/
+│   ├── development/
+│   ├── knowledge/
+│   └── reports/
+├── lib/
+│   ├── firebase/
+│   ├── validation/
+│   ├── dates/
+│   └── utils/
+├── types/
+└── tests/
+````
+
+Não crie abstrações complexas nesta etapa.
+
+---
+
+## 4. Documentos obrigatórios
+
+Crie os seguintes arquivos:
+
+### `README.md`
+
+Inclua:
+
+* descrição do projeto;
+* objetivo do MVP;
+* faixa etária;
+* stack;
+* requisitos locais;
+* instalação;
+* execução;
+* scripts;
+* variáveis de ambiente;
+* regras básicas de segurança;
+* status atual do projeto.
+
+### `PRD.md`
+
+Registre o escopo do PueriCare MVP 1.
+
+### `ARCHITECTURE.md`
+
+Documente a arquitetura mínima:
+
+* frontend;
+* autenticação;
+* Firestore;
+* Storage;
+* rotas de servidor;
+* IA;
+* RAG;
+* relatórios;
+* deploy.
+
+### `SECURITY.md`
+
+Documente:
+
+* isolamento por usuário;
+* proteção de credenciais;
+* regras do Firestore;
+* dados sensíveis;
+* logs;
+* exclusão lógica;
+* requisitos mínimos da LGPD para o protótipo.
+
+### `ROADMAP.md`
+
+Organize as fases:
+
+* Fase 0 — Preparação;
+* Fase 1 — Fundação e autenticação;
+* Fase 2 — Pacientes;
+* Fase 3 — Consultas;
+* Fase 4 — Crescimento;
+* Fase 5 — Desenvolvimento;
+* Fase 6 — Relatórios;
+* Fase 7 — RAG científico;
+* Fase 8 — Auditoria e piloto.
+
+### `FUTURE.md`
+
+Registre funcionalidades que não fazem parte do MVP.
+
+### `.env.example`
+
+Inclua apenas nomes de variáveis, sem valores reais:
+
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
+
+FIREBASE_ADMIN_PROJECT_ID=
+FIREBASE_ADMIN_CLIENT_EMAIL=
+FIREBASE_ADMIN_PRIVATE_KEY=
+
+OPENAI_API_KEY=
+```
+
+### `.gitignore`
+
+Confirme que arquivos `.env`, credenciais, chaves privadas, arquivos temporários e artefatos locais não serão enviados ao Git.
+
+---
+
+## 5. Configurações de qualidade
+
+Configure scripts para:
+
+```bash
+npm run dev
+npm run lint
+npm run typecheck
+npm run test
+npm run test:e2e
+npm run build
+```
+
+Instale e configure somente o necessário para:
+
+* Vitest;
+* React Testing Library;
+* Playwright;
+* Zod;
+* React Hook Form;
+* Firebase.
+
+Não configure ainda a conexão com um projeto Firebase real.
+
+---
+
+## 6. Página inicial provisória
+
+Crie uma página inicial simples contendo:
+
+* nome PueriCare;
+* indicação de que se trata do MVP 1;
+* faixa etária: nascimento até 5 anos e 11 meses;
+* status: protótipo em desenvolvimento;
+* botão visual desabilitado para “Entrar”.
+
+Não implemente autenticação nesta fase.
+
+A interface deve ser:
+
+* responsiva;
+* limpa;
+* acessível;
+* adequada a um sistema de saúde;
+* sem elementos decorativos excessivos.
+
+---
+
+## 7. Testes mínimos
+
+Crie pelo menos:
+
+* um teste de renderização da página inicial;
+* um teste básico de utilitário ou validação;
+* um teste E2E que confirme a abertura da página inicial.
+
+---
+
+## 8. Validação obrigatória
+
+Ao final, execute:
+
+```bash
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+```
+
+Execute também o teste E2E caso o ambiente permita:
+
+```bash
+npm run test:e2e
+```
+
+Não informe que os testes passaram sem apresentar os resultados reais.
+
+Não ignore falhas.
+
+Não desabilite regras para ocultar erros.
+
+---
+
+## 9. Git
+
+Caso o repositório ainda não exista:
+
+```bash
+git init
+git branch -M main
+```
+
+Antes do commit, execute:
+
+```bash
+git status
+git diff --check
+```
+
+Somente se todas as verificações passarem, crie o commit:
+
+```bash
+git add .
+git commit -m "chore: iniciar estrutura do PueriCare MVP 1"
+```
+
+Não configure repositório remoto.
+
+Não faça `git push`.
+
+Não use `git push --force`.
+
+---
+
+# Limites desta execução
+
+Nesta etapa, não implemente:
+
+* Firebase Authentication;
+* conexão real com Firestore;
+* cadastro de pacientes;
+* consultas;
+* crescimento;
+* desenvolvimento;
+* assistente de IA;
+* embeddings;
+* RAG;
+* geração de PDF;
+* deploy;
+* dados clínicos definitivos.
+
+Esta execução deve concluir somente a **Fase 0 — Preparação**.
+
+---
+
+# Relatório obrigatório
+
+Ao terminar, apresente:
+
+## Diagnóstico inicial
+
+* pasta utilizada;
+* arquivos existentes;
+* estado inicial do Git;
+* versões do Node.js e npm.
+
+## Implementação
+
+* estrutura criada;
+* dependências instaladas;
+* configurações realizadas.
+
+## Arquivos criados
+
+Liste todos os arquivos relevantes.
+
+## Testes executados
+
+Para cada comando, informe:
+
+* comando;
+* resultado;
+* falhas encontradas;
+* correções realizadas.
+
+## Segurança
+
+Informe:
+
+* proteção das variáveis;
+* situação do `.gitignore`;
+* ausência ou presença de credenciais;
+* riscos identificados.
+
+## Git
+
+Informe:
+
+* branch;
+* status;
+* hash do commit;
+* mensagem do commit;
+* confirmação de que nenhum push foi realizado.
+
+## Pendências
+
+Liste somente pendências reais.
+
+## Próxima fase
+
+Indique a **Fase 1 — Fundação e autenticação**, mas não a execute.
+
+Não faça nenhuma implementação adicional após concluir a Fase 0.
+
+```
+```

@@ -1,0 +1,350 @@
+PRD — MVP 1.0
+PueriCare
+Sistema Inteligente para Acompanhamento da Puericultura
+Versão: 1.0 (MVP)
+Status: Planejamento
+Objetivo: Construção de um protótipo funcional para validação clínica.
+________________________________________
+1. Visão Geral
+Objetivo
+Desenvolver um aplicativo simples que permita ao profissional registrar uma consulta de puericultura de forma organizada e obter apoio científico através de Inteligência Artificial baseada em documentos oficiais.
+O MVP não pretende substituir o raciocínio clínico nem contemplar toda a complexidade da puericultura. Seu propósito é validar o fluxo de uso, a experiência do profissional e a utilidade do sistema durante consultas reais.
+________________________________________
+2. Público-alvo
+Usuário principal
+•	Pediatras
+•	Médicos de Família
+•	Enfermeiros
+•	Residentes em Pediatria
+Usuário secundário
+Pais e responsáveis (apenas por meio dos relatórios exportados).
+________________________________________
+3. Escopo do MVP
+O sistema será composto por seis módulos principais:
+1.	Dashboard
+2.	Pacientes
+3.	Consulta
+4.	Crescimento
+5.	Desenvolvimento
+6.	Assistente IA
+7.	Relatórios
+________________________________________
+4. Objetivos do MVP
+Ao final do desenvolvimento, o profissional deverá ser capaz de:
+•	cadastrar uma criança;
+•	registrar uma consulta de puericultura;
+•	acompanhar peso, altura e perímetro cefálico;
+•	registrar marcos do desenvolvimento;
+•	consultar recomendações científicas;
+•	gerar um relatório da consulta.
+________________________________________
+5. Funcionalidades
+5.1 Login
+Requisitos
+•	Login por e-mail e senha.
+•	Recuperação de senha.
+•	Sessão persistente.
+________________________________________
+5.2 Dashboard
+Exibir:
+•	total de crianças cadastradas;
+•	consultas realizadas;
+•	últimas consultas;
+•	botão "Nova Consulta";
+•	botão "Novo Paciente".
+________________________________________
+5.3 Cadastro da Criança
+Dados da criança
+•	Nome
+•	Data de nascimento
+•	Sexo
+Responsável
+•	Nome
+•	Telefone
+Dados ao nascimento
+•	Idade gestacional
+•	Tipo de parto
+•	Peso
+•	Comprimento
+•	Perímetro cefálico
+________________________________________
+5.4 Lista de Pacientes
+Permitir:
+•	pesquisar por nome;
+•	editar cadastro;
+•	excluir cadastro;
+•	iniciar consulta.
+________________________________________
+6. Consulta
+Cada consulta possuirá:
+Dados básicos
+•	Data
+•	Idade calculada automaticamente
+________________________________________
+Alimentação
+Campo de texto livre.
+________________________________________
+Sono
+Campo de texto livre.
+________________________________________
+Desenvolvimento
+Checklist conforme idade.
+________________________________________
+Vacinação
+Campo simples:
+•	Em dia
+•	Atrasada
+•	Não informado
+________________________________________
+Observações clínicas
+Campo de texto livre.
+________________________________________
+Conduta
+Campo de texto livre.
+________________________________________
+7. Crescimento
+Registrar:
+•	Peso
+•	Altura
+•	Perímetro cefálico
+Exibir:
+•	histórico;
+•	gráfico temporal.
+Neste MVP não serão implementadas curvas completas da OMS.
+________________________________________
+8. Desenvolvimento
+O sistema apresentará um checklist baseado na idade.
+Exemplo:
+12 meses
+•	fica em pé;
+•	anda com apoio;
+•	fala "mamã";
+•	pinça fina.
+24 meses
+•	corre;
+•	sobe escadas;
+•	frases com duas palavras;
+•	identifica objetos.
+36 meses
+•	monta frases;
+•	brinca simbolicamente;
+•	salta.
+Os marcos serão parametrizados.
+________________________________________
+9. Assistente IA
+Objetivo:
+Responder dúvidas utilizando apenas documentos científicos cadastrados.
+Exemplos:
+•	alimentação complementar;
+•	aleitamento;
+•	sono seguro;
+•	vacinação;
+•	desenvolvimento.
+Sempre apresentar:
+•	resposta;
+•	referência utilizada.
+Não poderá:
+•	diagnosticar;
+•	prescrever medicamentos;
+•	emitir laudos.
+________________________________________
+10. Relatório
+Após finalizar a consulta:
+Botão:
+Gerar Relatório
+A IA produzirá um texto organizado contendo:
+•	identificação;
+•	motivo da consulta;
+•	crescimento;
+•	desenvolvimento;
+•	alimentação;
+•	sono;
+•	vacinação;
+•	observações;
+•	conduta.
+O profissional poderá editar antes da exportação.
+Exportação:
+•	PDF.
+________________________________________
+11. Banco de Dados
+Coleções:
+users
+
+children
+
+consultations
+
+growth
+
+development
+
+knowledge
+
+reports
+________________________________________
+12. Estrutura das Coleções
+users
+id
+nome
+email
+createdAt
+________________________________________
+children
+id
+nome
+sexo
+dataNascimento
+
+responsavel
+
+telefone
+
+idadeGestacional
+
+tipoParto
+
+pesoNascimento
+
+comprimentoNascimento
+
+pcNascimento
+
+createdAt
+________________________________________
+consultations
+id
+
+childId
+
+date
+
+feeding
+
+sleep
+
+vaccination
+
+observations
+
+conduct
+
+createdAt
+________________________________________
+growth
+id
+
+childId
+
+date
+
+weight
+
+height
+
+headCircumference
+________________________________________
+development
+id
+
+childId
+
+date
+
+milestones
+________________________________________
+knowledge
+Armazenará os documentos científicos utilizados pelo RAG.
+________________________________________
+reports
+Relatórios gerados.
+________________________________________
+13. Inteligência Artificial
+A IA utilizará RAG.
+Fluxo:
+Pergunta
+
+↓
+
+Busca Vetorial
+
+↓
+
+Documentos Científicos
+
+↓
+
+LLM
+
+↓
+
+Resposta
+
+↓
+
+Citação da Fonte
+________________________________________
+14. Fontes Científicas Iniciais
+•	Organização Mundial da Saúde (OMS)
+•	Sociedade Brasileira de Pediatria (SBP)
+•	Ministério da Saúde
+Os documentos serão adicionados manualmente nesta fase.
+________________________________________
+15. Requisitos Não Funcionais
+•	Interface responsiva.
+•	Tempo de carregamento inferior a 3 segundos.
+•	Autenticação via Firebase.
+•	Banco de dados Firestore.
+•	Armazenamento no Firebase Storage.
+•	Deploy na Vercel.
+•	Compatível com desktop e dispositivos móveis.
+________________________________________
+16. Tecnologias
+Frontend
+•	Next.js
+•	React
+•	TypeScript
+•	Tailwind CSS
+Backend
+•	Firebase Authentication
+•	Firestore
+•	Storage
+•	Cloud Functions (quando necessário)
+IA
+•	OpenAI API
+•	Embeddings
+•	Busca vetorial no Firestore
+________________________________________
+17. Critérios de Aceite
+O MVP será considerado concluído quando for possível:
+•	cadastrar uma criança;
+•	localizar um paciente pelo nome;
+•	registrar uma consulta;
+•	registrar medidas de crescimento;
+•	registrar marcos do desenvolvimento;
+•	consultar a IA utilizando documentos científicos;
+•	gerar um relatório em PDF;
+•	acessar o sistema por desktop e celular;
+•	armazenar todos os dados no Firestore.
+________________________________________
+18. Funcionalidades Fora do Escopo
+Não fazem parte do MVP:
+•	Agenda de consultas.
+•	Portal para pais.
+•	Controle financeiro.
+•	Telemedicina.
+•	Prescrição eletrônica.
+•	Curvas completas da OMS.
+•	Motor avançado de regras clínicas.
+•	Atualização automática do RAG.
+•	Integrações com sistemas externos.
+•	Aplicativo nativo para Android/iOS.
+•	Funcionamento offline.
+________________________________________
+19. Roadmap Pós-MVP
+Após a validação clínica do protótipo, a evolução prevista é:
+•	Versão 1.1: Curvas completas da OMS e alertas automáticos de crescimento.
+•	Versão 1.2: Calendário vacinal detalhado e acompanhamento alimentar estruturado.
+•	Versão 1.3: Motor de regras clínicas, relatórios avançados e linha do tempo do paciente.
+•	Versão 2.0: Portal do responsável, atualização supervisionada da base científica, integrações e recursos avançados de apoio à decisão clínica.
+Este PRD mantém o escopo intencionalmente enxuto, permitindo desenvolver um protótipo utilizável em ambiente clínico, obter feedback de profissionais e orientar a evolução do produto com base em uso real.
+

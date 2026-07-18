@@ -1,0 +1,838 @@
+Skill — Implementação do MVP 1 do PueriCare
+Nome da skill
+puericare-mvp1-implementation
+Finalidade
+Orientar um agente de programação na implementação completa do MVP 1 do PueriCare, um protótipo clínico para acompanhamento de crianças do nascimento até 5 anos e 11 meses.
+A skill deve garantir:
+•	escopo controlado;
+•	arquitetura simples;
+•	implementação incremental;
+•	segurança mínima adequada;
+•	validação por testes;
+•	rastreabilidade das alterações;
+•	ausência de funcionalidades fora do MVP;
+•	preparação para testes reais com profissionais.
+________________________________________
+1. Identidade da skill
+---
+name: puericare-mvp1-implementation
+description: >
+  Orienta a implementação incremental e segura do MVP 1 do PueriCare,
+  sistema de puericultura para crianças do nascimento até 5 anos e 11 meses.
+  Use esta skill para planejar, construir, testar, auditar e homologar
+  o protótipo, mantendo rigorosamente o escopo definido no PRD.
+version: 1.0.0
+language: pt-BR
+status: active
+---
+________________________________________
+2. Contexto do produto
+O PueriCare é um sistema de apoio ao registro de consultas de puericultura.
+A faixa etária inicial é:
+nascimento até 5 anos e 11 meses
+O produto deve permitir que um profissional:
+•	cadastre crianças;
+•	registre consultas;
+•	acompanhe crescimento;
+•	registre marcos do desenvolvimento;
+•	consulte uma base científica por meio de IA;
+•	gere relatórios editáveis;
+•	exporte relatórios em PDF.
+O MVP é um protótipo funcional. Não deve tentar resolver toda a complexidade clínica da puericultura.
+________________________________________
+3. Princípio central
+O agente deve sempre seguir esta regra:
+Implementar apenas o necessário para validar o uso clínico do protótipo.
+Não adicionar módulos, integrações ou automações fora do escopo sem autorização explícita.
+________________________________________
+4. Escopo obrigatório
+O MVP deve conter apenas os seguintes módulos:
+1.	Autenticação
+2.	Dashboard
+3.	Pacientes
+4.	Consulta
+5.	Crescimento
+6.	Desenvolvimento
+7.	Assistente científico com IA
+8.	Relatórios
+________________________________________
+5. Fora do escopo
+O agente não deve implementar, salvo autorização explícita:
+•	agenda;
+•	portal dos responsáveis;
+•	telemedicina;
+•	prescrição eletrônica;
+•	controle financeiro;
+•	faturamento;
+•	integração com laboratórios;
+•	integração com convênios;
+•	aplicativo nativo;
+•	modo offline;
+•	notificações push;
+•	WhatsApp;
+•	motor clínico complexo;
+•	diagnóstico automatizado;
+•	prescrição por IA;
+•	atualização automática da base científica;
+•	conectores com PubMed ou sites externos;
+•	prontuário interoperável;
+•	integrações via FHIR;
+•	múltiplas clínicas;
+•	marketplace;
+•	permissões corporativas avançadas.
+Quando identificar uma oportunidade fora do escopo, o agente deve apenas registrá-la em FUTURE.md.
+________________________________________
+6. Stack obrigatória
+Frontend
+•	Next.js
+•	React
+•	TypeScript
+•	Tailwind CSS
+Backend e infraestrutura
+•	Firebase Authentication
+•	Cloud Firestore
+•	Firebase Storage
+•	Firebase Admin SDK apenas em ambiente servidor
+•	Vercel para deploy
+IA
+•	API de modelo de linguagem
+•	embeddings;
+•	busca vetorial;
+•	RAG com documentos previamente cadastrados.
+Testes
+•	Vitest ou Jest;
+•	React Testing Library;
+•	Playwright para testes ponta a ponta.
+________________________________________
+7. Restrições técnicas
+O agente deve respeitar as seguintes restrições:
+•	não expor chaves privadas no frontend;
+•	não armazenar credenciais no repositório;
+•	não usar any sem justificativa;
+•	não ignorar erros do TypeScript;
+•	não desabilitar regras de lint para ocultar problemas;
+•	não criar estruturas excessivamente abstratas;
+•	não usar banco local como fonte oficial;
+•	não depender exclusivamente de estado em memória;
+•	não permitir acesso cruzado entre usuários;
+•	não gerar respostas clínicas sem citar a fonte;
+•	não permitir que a IA diagnostique ou prescreva;
+•	não criar funcionalidades sem teste mínimo.
+________________________________________
+8. Estrutura inicial recomendada
+src/
+├── app/
+│   ├── login/
+│   ├── dashboard/
+│   ├── patients/
+│   │   ├── new/
+│   │   └── [patientId]/
+│   │       ├── overview/
+│   │       ├── consultation/
+│   │       ├── growth/
+│   │       ├── development/
+│   │       └── reports/
+│   ├── assistant/
+│   └── api/
+│       ├── ai/
+│       ├── reports/
+│       └── knowledge/
+├── components/
+│   ├── ui/
+│   ├── layout/
+│   ├── forms/
+│   ├── charts/
+│   └── clinical/
+├── domains/
+│   ├── auth/
+│   ├── patients/
+│   ├── consultations/
+│   ├── growth/
+│   ├── development/
+│   ├── knowledge/
+│   └── reports/
+├── lib/
+│   ├── firebase/
+│   ├── auth/
+│   ├── ai/
+│   ├── validation/
+│   ├── dates/
+│   └── pdf/
+├── types/
+├── tests/
+└── styles/
+O agente pode ajustar a estrutura, desde que mantenha separação clara por domínio.
+________________________________________
+9. Modelo de dados mínimo
+Coleção users
+type UserProfile = {
+  id: string;
+  name: string;
+  email: string;
+  role: "professional" | "admin";
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+};
+Coleção children
+type Child = {
+  id: string;
+  ownerId: string;
+
+  name: string;
+  birthDate: Timestamp;
+  sex: "female" | "male" | "other" | "not_informed";
+
+  caregiverName: string;
+  caregiverPhone: string;
+
+  gestationalAgeWeeks?: number;
+  deliveryType?: "vaginal" | "cesarean" | "other" | "not_informed";
+
+  birthWeightGrams?: number;
+  birthLengthCm?: number;
+  birthHeadCircumferenceCm?: number;
+
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  deletedAt?: Timestamp | null;
+};
+Coleção consultations
+type Consultation = {
+  id: string;
+  ownerId: string;
+  childId: string;
+
+  consultationDate: Timestamp;
+  ageInMonths: number;
+
+  feedingNotes: string;
+  sleepNotes: string;
+
+  vaccinationStatus:
+    | "up_to_date"
+    | "delayed"
+    | "not_informed";
+
+  clinicalObservations: string;
+  conduct: string;
+
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+};
+Coleção growthRecords
+type GrowthRecord = {
+  id: string;
+  ownerId: string;
+  childId: string;
+  consultationId?: string;
+
+  measuredAt: Timestamp;
+  weightKg?: number;
+  heightCm?: number;
+  headCircumferenceCm?: number;
+
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+};
+Coleção developmentRecords
+type DevelopmentRecord = {
+  id: string;
+  ownerId: string;
+  childId: string;
+  consultationId?: string;
+
+  recordedAt: Timestamp;
+  ageInMonths: number;
+
+  milestones: Array<{
+    milestoneId: string;
+    status: "achieved" | "not_achieved" | "not_observed";
+    notes?: string;
+  }>;
+
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+};
+Coleção developmentMilestones
+type DevelopmentMilestone = {
+  id: string;
+
+  title: string;
+  description?: string;
+
+  domain:
+    | "gross_motor"
+    | "fine_motor"
+    | "language"
+    | "social"
+    | "cognitive";
+
+  minAgeMonths: number;
+  maxAgeMonths: number;
+
+  active: boolean;
+  source?: string;
+};
+Coleção knowledgeDocuments
+type KnowledgeDocument = {
+  id: string;
+
+  title: string;
+  institution: "MS" | "SBP" | "WHO" | "OTHER";
+  publicationYear?: number;
+
+  fileUrl: string;
+  status: "processing" | "ready" | "failed";
+
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+};
+Coleção knowledgeChunks
+type KnowledgeChunk = {
+  id: string;
+  documentId: string;
+
+  content: string;
+  embedding: number[];
+
+  title: string;
+  institution: string;
+  page?: number;
+  sourceUrl?: string;
+
+  createdAt: Timestamp;
+};
+Coleção reports
+type ClinicalReport = {
+  id: string;
+  ownerId: string;
+  childId: string;
+  consultationId: string;
+
+  generatedText: string;
+  editedText: string;
+
+  status: "draft" | "final";
+  pdfUrl?: string;
+
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+};
+________________________________________
+10. Regras de segurança
+Todas as coleções clínicas devem conter ownerId.
+O usuário autenticado só poderá:
+•	criar documentos com seu próprio ownerId;
+•	ler documentos cujo ownerId seja igual ao seu UID;
+•	editar apenas seus próprios documentos;
+•	excluir logicamente seus próprios documentos.
+Exemplo conceitual:
+request.auth != null
+AND resource.data.ownerId == request.auth.uid
+Para criação:
+request.resource.data.ownerId == request.auth.uid
+O agente deve criar e testar as regras do Firestore antes de considerar o módulo concluído.
+________________________________________
+11. Regras funcionais por módulo
+11.1 Autenticação
+Implementar:
+•	login com e-mail e senha;
+•	logout;
+•	recuperação de senha;
+•	proteção de rotas;
+•	redirecionamento para login quando não autenticado;
+•	persistência da sessão.
+Critérios:
+•	usuário não autenticado não acessa páginas internas;
+•	mensagens de erro são compreensíveis;
+•	senha nunca é armazenada manualmente.
+________________________________________
+11.2 Dashboard
+Exibir:
+•	total de crianças ativas;
+•	total de consultas;
+•	consultas mais recentes;
+•	botão para cadastrar criança;
+•	botão para iniciar consulta.
+O dashboard não precisa ter gráficos avançados.
+________________________________________
+11.3 Cadastro da criança
+Campos obrigatórios:
+•	nome;
+•	data de nascimento;
+•	sexo;
+•	nome do responsável.
+Campos opcionais:
+•	telefone;
+•	idade gestacional;
+•	tipo de parto;
+•	peso ao nascer;
+•	comprimento ao nascer;
+•	perímetro cefálico ao nascer.
+Validações mínimas:
+•	data de nascimento não pode ser futura;
+•	criança deve ter até 5 anos e 11 meses no momento do cadastro;
+•	peso e medidas devem aceitar apenas valores plausíveis;
+•	nome deve ser normalizado antes de salvar.
+Excluir deve significar exclusão lógica por deletedAt.
+________________________________________
+11.4 Lista de pacientes
+Implementar:
+•	listagem;
+•	busca por nome;
+•	ordenação alfabética;
+•	acesso ao perfil;
+•	edição;
+•	exclusão lógica;
+•	ação para iniciar consulta.
+Não implementar paginação complexa no MVP, salvo necessidade técnica.
+________________________________________
+11.5 Consulta
+A consulta deve ser realizada em uma única tela ou formulário simples.
+Campos:
+•	data da consulta;
+•	idade calculada automaticamente;
+•	alimentação;
+•	sono;
+•	situação vacinal;
+•	observações clínicas;
+•	conduta;
+•	medidas de crescimento;
+•	checklist de desenvolvimento.
+A consulta deve permitir:
+•	salvar rascunho;
+•	editar;
+•	concluir;
+•	gerar relatório.
+Não implementar protocolo clínico complexo.
+________________________________________
+11.6 Crescimento
+Registrar:
+•	peso;
+•	altura ou comprimento;
+•	perímetro cefálico;
+•	data da medição.
+Mostrar:
+•	histórico em tabela;
+•	gráfico temporal simples;
+•	unidades visíveis.
+Regras:
+•	peso em quilogramas;
+•	altura e perímetro cefálico em centímetros;
+•	não permitir valores negativos;
+•	não interpretar automaticamente curvas ou diagnósticos.
+O gráfico deve mostrar apenas evolução temporal neste MVP.
+________________________________________
+11.7 Desenvolvimento
+Os marcos devem ser selecionados conforme a idade da criança.
+Faixas sugeridas:
+•	0–2 meses;
+•	3–5 meses;
+•	6–8 meses;
+•	9–11 meses;
+•	12–17 meses;
+•	18–23 meses;
+•	24–35 meses;
+•	36–47 meses;
+•	48–59 meses;
+•	60–71 meses.
+Cada marco deve possuir:
+•	domínio;
+•	descrição;
+•	faixa etária;
+•	status;
+•	observação opcional.
+Estados:
+•	alcançado;
+•	não alcançado;
+•	não observado.
+O agente não deve inventar marcos clínicos. Os dados iniciais devem ser identificados como conteúdo provisório até revisão profissional.
+________________________________________
+11.8 Assistente científico
+A IA deve responder somente com base nos documentos indexados.
+Fluxo obrigatório:
+pergunta
+→ validação
+→ criação do embedding
+→ busca dos trechos relevantes
+→ montagem do contexto
+→ resposta do modelo
+→ apresentação das fontes
+A resposta deve conter:
+•	síntese;
+•	fontes;
+•	instituição;
+•	título do documento;
+•	página ou trecho, quando disponível.
+Caso não haja evidência suficiente:
+Não encontrei informação suficiente na base científica cadastrada.
+O sistema não deve completar a resposta com conhecimento externo sem informar.
+Bloqueios:
+•	diagnóstico;
+•	prescrição;
+•	dose de medicamento;
+•	conduta emergencial individualizada;
+•	emissão de laudo;
+•	substituição da avaliação profissional.
+Mensagem fixa:
+Este recurso oferece apoio informativo com base nos documentos cadastrados e não substitui avaliação clínica.
+________________________________________
+11.9 Relatórios
+O relatório deve ser gerado a partir dos dados da consulta.
+Estrutura sugerida:
+1.	Identificação da criança
+2.	Data e idade
+3.	Alimentação
+4.	Sono
+5.	Crescimento
+6.	Desenvolvimento
+7.	Vacinação
+8.	Observações clínicas
+9.	Conduta
+Fluxo:
+dados da consulta
+→ geração inicial
+→ revisão do profissional
+→ edição
+→ finalização
+→ exportação em PDF
+A IA nunca deve finalizar automaticamente o relatório.
+O profissional deve revisar e confirmar.
+________________________________________
+12. Plano de implementação obrigatório
+Fase 0 — Preparação
+Objetivos:
+•	validar PRD;
+•	criar repositório;
+•	configurar ambiente;
+•	definir variáveis;
+•	preparar Firebase;
+•	criar documentação inicial.
+Entregáveis:
+•	README.md;
+•	.env.example;
+•	PRD.md;
+•	ARCHITECTURE.md;
+•	SECURITY.md;
+•	ROADMAP.md;
+•	FUTURE.md.
+Validação:
+npm install
+npm run lint
+npm run typecheck
+npm run build
+________________________________________
+Fase 1 — Fundação
+Implementar:
+•	Next.js;
+•	TypeScript;
+•	Tailwind;
+•	layout;
+•	autenticação;
+•	proteção de rotas;
+•	integração Firebase;
+•	tratamento global de erros.
+Entregável:
+•	usuário consegue entrar, sair e recuperar senha.
+________________________________________
+Fase 2 — Pacientes
+Implementar:
+•	cadastro;
+•	listagem;
+•	pesquisa;
+•	edição;
+•	exclusão lógica;
+•	perfil da criança.
+Entregável:
+•	fluxo completo de gerenciamento de crianças.
+________________________________________
+Fase 3 — Consulta
+Implementar:
+•	criação;
+•	edição;
+•	visualização;
+•	rascunho;
+•	conclusão;
+•	vínculo com criança.
+Entregável:
+•	profissional registra uma consulta completa.
+________________________________________
+Fase 4 — Crescimento
+Implementar:
+•	registro de medidas;
+•	histórico;
+•	gráfico temporal;
+•	vínculo com consulta.
+Entregável:
+•	medidas persistidas e exibidas corretamente.
+________________________________________
+Fase 5 — Desenvolvimento
+Implementar:
+•	catálogo de marcos;
+•	seleção por idade;
+•	checklist;
+•	persistência;
+•	histórico.
+Entregável:
+•	checklist adequado à faixa etária.
+________________________________________
+Fase 6 — Relatórios
+Implementar:
+•	montagem dos dados;
+•	geração assistida;
+•	editor;
+•	armazenamento;
+•	PDF.
+Entregável:
+•	relatório revisável e exportável.
+________________________________________
+Fase 7 — RAG científico
+Implementar:
+•	upload manual de documentos;
+•	extração de texto;
+•	chunking;
+•	embeddings;
+•	indexação;
+•	busca;
+•	geração com fontes.
+Entregável:
+•	respostas fundamentadas apenas na base cadastrada.
+________________________________________
+Fase 8 — Auditoria e piloto
+Executar:
+•	testes unitários;
+•	testes de integração;
+•	testes E2E;
+•	revisão das regras;
+•	revisão de privacidade;
+•	revisão das telas;
+•	homologação;
+•	deploy.
+Entregável:
+•	protótipo liberado para testes controlados.
+________________________________________
+13. Procedimento obrigatório por fase
+Para cada fase, o agente deve seguir este ciclo:
+1. Diagnóstico
+Antes de alterar código:
+•	verificar estrutura atual;
+•	verificar branch;
+•	verificar status do Git;
+•	verificar dependências;
+•	identificar arquivos envolvidos;
+•	identificar riscos.
+2. Plano
+Descrever:
+•	objetivo;
+•	arquivos a criar;
+•	arquivos a alterar;
+•	modelo de dados;
+•	riscos;
+•	testes.
+3. Implementação
+Executar apenas o plano aprovado ou claramente necessário.
+4. Validação
+Executar:
+npm run lint
+npm run typecheck
+npm test
+npm run build
+Quando houver E2E:
+npm run test:e2e
+5. Revisão
+Verificar:
+•	segurança;
+•	isolamento entre usuários;
+•	validação dos dados;
+•	acessibilidade;
+•	responsividade;
+•	tratamento de erros;
+•	ausência de segredos;
+•	ausência de logs sensíveis.
+6. Relatório
+Entregar:
+•	resumo;
+•	arquivos alterados;
+•	testes executados;
+•	resultados;
+•	pendências;
+•	riscos;
+•	próximos passos.
+7. Git
+Somente após testes aprovados:
+git status
+git diff --check
+git add .
+git commit -m "<tipo>: <descrição>"
+git push
+Nunca executar git push --force sem autorização explícita.
+________________________________________
+14. Política de commits
+Usar Conventional Commits.
+Exemplos:
+feat: implementar cadastro de pacientes
+fix: corrigir isolamento de consultas por usuário
+test: adicionar testes das regras do Firestore
+docs: documentar fluxo de geração de relatórios
+refactor: separar serviço de pacientes
+chore: configurar ambiente de testes
+Cada commit deve representar uma unidade lógica concluída.
+________________________________________
+15. Regras para decisões do agente
+O agente deve:
+•	optar pela solução mais simples que atenda ao requisito;
+•	evitar dependências desnecessárias;
+•	evitar abstração prematura;
+•	manter componentes pequenos;
+•	centralizar validações;
+•	usar esquemas com Zod;
+•	separar interface, domínio e persistência;
+•	manter textos clínicos fora do código quando possível;
+•	documentar decisões relevantes;
+•	interromper quando houver risco de perda de dados;
+•	pedir confirmação antes de mudanças destrutivas.
+________________________________________
+16. Critérios de aceite gerais
+O MVP só poderá ser considerado concluído quando:
+•	login funciona;
+•	cada usuário acessa apenas seus próprios dados;
+•	criança pode ser cadastrada, editada e desativada;
+•	consulta pode ser criada e editada;
+•	medidas podem ser registradas;
+•	gráfico de crescimento é exibido;
+•	checklist de desenvolvimento varia conforme a idade;
+•	assistente responde com fontes;
+•	relatório pode ser editado;
+•	relatório pode ser exportado para PDF;
+•	regras de segurança foram testadas;
+•	build de produção passa;
+•	testes críticos passam;
+•	não existem credenciais no repositório;
+•	interface funciona em desktop e celular.
+________________________________________
+17. Definition of Done
+Uma tarefa só está concluída quando:
+•	requisito implementado;
+•	código tipado;
+•	validação presente;
+•	estado de carregamento implementado;
+•	estado vazio implementado;
+•	mensagem de erro implementada;
+•	teste relevante criado;
+•	lint aprovado;
+•	typecheck aprovado;
+•	build aprovado;
+•	documentação atualizada;
+•	commit criado;
+•	nenhuma regressão conhecida.
+________________________________________
+18. Formato de resposta do agente
+Ao concluir qualquer etapa, responder desta forma:
+# Relatório da etapa
+
+## Objetivo
+[objetivo executado]
+
+## Implementação
+[alterações realizadas]
+
+## Arquivos criados
+- arquivo
+- arquivo
+
+## Arquivos alterados
+- arquivo
+- arquivo
+
+## Banco de dados
+[coleções, campos, índices e regras]
+
+## Segurança
+[controles implementados]
+
+## Testes executados
+- comando: resultado
+- comando: resultado
+
+## Pendências
+- pendência ou "nenhuma"
+
+## Riscos
+- risco ou "nenhum risco crítico identificado"
+
+## Git
+- branch:
+- commit:
+- push:
+
+## Próxima etapa recomendada
+[etapa seguinte]
+________________________________________
+19. Prompt operacional da skill
+Você está implementando o MVP 1 do PueriCare.
+
+Objetivo do produto:
+Construir um protótipo funcional para registro e acompanhamento de consultas
+de puericultura de crianças do nascimento até 5 anos e 11 meses.
+
+Siga rigorosamente a skill puericare-mvp1-implementation.
+
+Regras obrigatórias:
+
+1. Não amplie o escopo sem autorização.
+2. Não implemente diagnóstico ou prescrição automatizados.
+3. Não invente conteúdo clínico.
+4. Garanta isolamento dos dados por usuário.
+5. Não exponha credenciais.
+6. Trabalhe por fases pequenas e verificáveis.
+7. Antes de alterar o código, faça diagnóstico.
+8. Depois de implementar, execute lint, typecheck, testes e build.
+9. Não declare sucesso sem evidência dos comandos executados.
+10. Registre funcionalidades futuras no arquivo FUTURE.md.
+11. Não use exclusão física para dados clínicos no MVP.
+12. Toda resposta da IA deve apresentar as fontes utilizadas.
+13. O relatório clínico deve ser revisado pelo profissional antes da exportação.
+14. Não faça push forçado.
+15. Entregue um relatório técnico ao final de cada etapa.
+
+Ao iniciar:
+- leia o PRD;
+- leia a documentação existente;
+- verifique o Git;
+- identifique a fase atual;
+- apresente um plano objetivo;
+- implemente somente a próxima fase pendente.
+________________________________________
+20. Prompt inicial para Codex, Claude Code ou Antigravity
+Leia integralmente a skill `puericare-mvp1-implementation` e o PRD do MVP 1.
+
+Sua primeira tarefa não é implementar funcionalidades.
+
+Faça uma auditoria inicial do projeto e entregue:
+
+1. estrutura atual do repositório;
+2. tecnologias encontradas;
+3. estado do Git;
+4. branch atual;
+5. último commit;
+6. dependências principais;
+7. configuração atual do Firebase;
+8. variáveis de ambiente esperadas;
+9. riscos técnicos;
+10. itens já implementados;
+11. itens ausentes;
+12. divergências em relação ao PRD;
+13. proposta de arquitetura mínima;
+14. plano de implementação por fases;
+15. definição objetiva da primeira fase.
+
+Não altere arquivos nesta etapa.
+
+Não instale dependências.
+
+Não faça commit.
+
+Não faça push.
+
+Ao final, aguarde autorização para iniciar a implementação.
+

@@ -1,0 +1,881 @@
+Planejamento do MVP — Aplicativo de Puericultura com RAG Científico Supervisionado
+1. Objetivo do MVP
+Entregar uma primeira versão funcional capaz de:
+•	cadastrar profissionais, responsáveis e crianças;
+•	registrar consultas de puericultura;
+•	acompanhar crescimento e desenvolvimento;
+•	registrar alimentação, sono e vacinação;
+•	gerar alertas básicos;
+•	produzir resumo clínico;
+•	consultar uma base científica por RAG;
+•	detectar novos documentos em fontes autorizadas;
+•	encaminhar novos conteúdos para revisão antes da publicação.
+O MVP não deve tentar implementar todos os módulos previstos no produto final.
+________________________________________
+2. Problema que o MVP resolve
+O sistema deve reduzir quatro dificuldades principais:
+1.	informações clínicas espalhadas;
+2.	ausência de acompanhamento longitudinal organizado;
+3.	dificuldade de identificar pendências e sinais de atenção;
+4.	dificuldade de consultar rapidamente orientações confiáveis.
+________________________________________
+3. Público inicial
+Usuário principal
+•	pediatra;
+•	médico de família;
+•	profissional autorizado que realiza acompanhamento infantil.
+Usuário secundário
+•	responsável pela criança.
+No MVP, o portal do responsável pode ser limitado a visualização de informações e orientações liberadas pelo profissional.
+________________________________________
+4. Faixa etária inicial
+Para reduzir complexidade:
+Nascimento até 24 meses
+Essa faixa concentra:
+•	crescimento acelerado;
+•	aleitamento;
+•	alimentação complementar;
+•	vacinação;
+•	desenvolvimento;
+•	sono;
+•	prevenção de acidentes;
+•	maior frequência de consultas.
+A expansão para 2 a 5 anos fica para versões posteriores.
+________________________________________
+5. Escopo funcional do MVP
+Módulo 1 — Autenticação e perfis
+Funcionalidades
+•	login por e-mail e senha;
+•	recuperação de senha;
+•	perfil profissional;
+•	perfil administrador;
+•	perfil responsável;
+•	controle de acesso;
+•	encerramento de sessão;
+•	bloqueio de conta.
+Perfis
+ADMIN
+PROFESSIONAL
+CAREGIVER
+________________________________________
+Módulo 2 — Cadastro da criança
+Dados mínimos
+•	nome completo;
+•	data de nascimento;
+•	sexo registrado;
+•	nome social, se aplicável;
+•	responsável principal;
+•	telefone;
+•	e-mail;
+•	número do Cartão SUS, opcional;
+•	plano de saúde, opcional;
+•	pediatra ou profissional responsável;
+•	informações de nascimento.
+Dados perinatais
+•	idade gestacional;
+•	tipo de parto;
+•	peso ao nascer;
+•	comprimento ao nascer;
+•	perímetro cefálico;
+•	Apgar;
+•	prematuridade;
+•	internação neonatal;
+•	intercorrências.
+________________________________________
+Módulo 3 — Consulta de puericultura
+A consulta deve ser estruturada em blocos.
+Blocos mínimos
+1.	motivo da consulta;
+2.	intercorrências desde a última consulta;
+3.	antropometria;
+4.	alimentação;
+5.	sono;
+6.	desenvolvimento;
+7.	vacinação;
+8.	eliminações;
+9.	saúde bucal;
+10.	segurança;
+11.	exame e observações;
+12.	plano e orientações.
+Modos de preenchimento
+•	campos estruturados;
+•	texto livre;
+•	checklist;
+•	seleção rápida;
+•	salvamento como rascunho.
+________________________________________
+Módulo 4 — Crescimento
+Dados
+•	peso;
+•	comprimento ou estatura;
+•	perímetro cefálico;
+•	IMC, quando aplicável;
+•	data da medição.
+Funções
+•	cálculo automático da idade em dias e meses;
+•	histórico de medidas;
+•	gráfico de evolução;
+•	percentil;
+•	escore-Z;
+•	indicação de tendência;
+•	alerta de valor ausente ou discrepante.
+Indicadores iniciais
+•	peso para idade;
+•	comprimento para idade;
+•	peso para comprimento;
+•	perímetro cefálico para idade.
+Os cálculos devem ser determinísticos, sem IA.
+________________________________________
+Módulo 5 — Desenvolvimento
+Domínios
+•	motor grosso;
+•	motor fino;
+•	comunicação;
+•	cognição;
+•	social e adaptativo.
+Funcionalidades
+•	checklist por faixa etária;
+•	registro de marco presente, ausente ou não avaliado;
+•	observação livre;
+•	comparação com avaliações anteriores;
+•	alerta de marco importante ausente;
+•	indicação de necessidade de reavaliação.
+Estados
+ACHIEVED
+NOT_ACHIEVED
+NOT_EVALUATED
+UNCERTAIN
+O sistema não deve emitir diagnóstico.
+________________________________________
+Módulo 6 — Alimentação
+Campos mínimos
+•	aleitamento materno;
+•	fórmula;
+•	uso de mamadeira;
+•	introdução alimentar;
+•	consistência dos alimentos;
+•	frequência de refeições;
+•	ingestão de água;
+•	alergias;
+•	dificuldades alimentares;
+•	engasgos;
+•	recusa alimentar;
+•	suplementação prescrita.
+Alertas iniciais
+•	alimentação complementar registrada antes da idade configurada;
+•	uso persistente de consistência inadequada;
+•	relato recorrente de engasgo;
+•	ausência de acompanhamento em criança com dificuldade alimentar.
+________________________________________
+Módulo 7 — Sono
+Campos
+•	local de sono;
+•	posição inicial;
+•	número de despertares;
+•	duração aproximada;
+•	rotina;
+•	ronco;
+•	pausas respiratórias relatadas;
+•	uso de telas antes de dormir;
+•	compartilhamento de cama.
+Alertas
+•	sono em posição inadequada conforme a faixa etária;
+•	presença de objetos soltos no berço;
+•	relato de pausa respiratória;
+•	ronco persistente;
+•	rotina de sono incompatível com orientação cadastrada.
+________________________________________
+Módulo 8 — Vacinação
+MVP
+•	cadastro do calendário vacinal;
+•	registro de doses;
+•	data de aplicação;
+•	lote opcional;
+•	estabelecimento;
+•	próximas vacinas;
+•	vacinas atrasadas;
+•	alertas de pendência.
+Limitação inicial
+O calendário será carregado manualmente por administrador autorizado.
+A atualização automática do calendário não entra diretamente em produção sem revisão.
+________________________________________
+Módulo 9 — Alertas clínicos básicos
+O motor de alertas deve ser baseado em regras explícitas.
+Categorias
+INFO
+ATTENTION
+HIGH_PRIORITY
+Exemplos
+•	vacina atrasada;
+•	medida antropométrica ausente;
+•	queda relevante na curva;
+•	marco prioritário ausente;
+•	retorno vencido;
+•	engasgo recorrente;
+•	relato de pausa respiratória;
+•	ausência de consulta há período definido.
+Regras
+Cada alerta deve registrar:
+•	motivo;
+•	fonte científica;
+•	data de criação;
+•	gravidade;
+•	situação;
+•	responsável pela resolução;
+•	ação tomada.
+________________________________________
+Módulo 10 — Linha do tempo
+Exibir em ordem cronológica:
+•	consultas;
+•	medidas;
+•	vacinas;
+•	alertas;
+•	intercorrências;
+•	orientações;
+•	documentos;
+•	atualizações clínicas.
+________________________________________
+Módulo 11 — Relatório básico
+Gerar um relatório em PDF contendo:
+•	identificação da criança;
+•	dados perinatais;
+•	medidas atuais;
+•	desenvolvimento;
+•	alimentação;
+•	sono;
+•	vacinação;
+•	alertas;
+•	plano;
+•	orientações;
+•	profissional responsável;
+•	data.
+O documento deve ser editável antes da emissão.
+________________________________________
+6. Escopo do RAG no MVP
+O RAG do MVP deve ser restrito e supervisionado.
+O que ele fará
+•	indexar documentos oficiais;
+•	responder perguntas sobre puericultura;
+•	recuperar trechos relevantes;
+•	apresentar fontes;
+•	informar data e instituição;
+•	gerar resumo de recomendações;
+•	detectar novos documentos em fontes previamente cadastradas;
+•	colocar novos documentos em fila de revisão.
+O que ele não fará
+•	alterar regras clínicas;
+•	atualizar calendário vacinal automaticamente;
+•	criar recomendações sem fonte;
+•	substituir diagnóstico;
+•	interpretar exames;
+•	prescrever tratamento;
+•	publicar documentos sem revisão.
+________________________________________
+7. Fontes iniciais do RAG
+Para o MVP, limitar a base a um conjunto pequeno e controlado.
+Fontes prioritárias
+•	Ministério da Saúde;
+•	Organização Mundial da Saúde;
+•	Sociedade Brasileira de Pediatria;
+•	Sociedade Brasileira de Imunizações;
+•	CDC;
+•	American Academy of Pediatrics;
+•	documentos do ENANI.
+Temas iniciais
+•	aleitamento;
+•	alimentação complementar;
+•	crescimento;
+•	desenvolvimento;
+•	sono seguro;
+•	vacinação;
+•	prevenção de acidentes;
+•	saúde bucal;
+•	tempo de tela;
+•	saúde mental do cuidador.
+________________________________________
+8. Autoalimentação do RAG no MVP
+A automação deve começar de forma simples.
+Métodos incluídos
+•	monitoramento de URLs cadastradas;
+•	leitura de RSS, quando disponível;
+•	leitura de sitemap;
+•	comparação de data de modificação;
+•	comparação de hash;
+•	importação manual de PDF;
+•	cadastro manual de DOI ou PMID.
+Fluxo
+Fonte autorizada
+    ↓
+Verificação programada
+    ↓
+Documento novo ou alterado
+    ↓
+Download
+    ↓
+Extração de texto
+    ↓
+Metadados
+    ↓
+Classificação
+    ↓
+Fila de revisão
+    ↓
+Aprovação humana
+    ↓
+Fragmentação
+    ↓
+Embeddings
+    ↓
+Publicação no RAG
+________________________________________
+9. Painel científico do MVP
+Tela: Fontes
+Campos:
+•	instituição;
+•	URL;
+•	tema;
+•	tipo de conector;
+•	frequência;
+•	estado;
+•	última verificação;
+•	último sucesso;
+•	erro atual.
+Tela: Documentos pendentes
+•	título;
+•	instituição;
+•	data;
+•	tipo;
+•	tema;
+•	documento anterior relacionado;
+•	status;
+•	pontuação preliminar.
+Tela: Revisão
+•	texto original;
+•	resumo automático;
+•	recomendações extraídas;
+•	diferenças em relação à versão anterior;
+•	possíveis conflitos;
+•	aprovar;
+•	rejeitar;
+•	solicitar ajuste.
+________________________________________
+10. Arquitetura técnica recomendada
+Frontend
+•	Next.js;
+•	React;
+•	TypeScript;
+•	Tailwind CSS;
+•	React Hook Form;
+•	Zod;
+•	Recharts.
+Backend
+•	Firebase Authentication;
+•	Cloud Firestore;
+•	Cloud Storage;
+•	Cloud Functions ou Cloud Run;
+•	Firebase App Check;
+•	Firebase Admin SDK.
+IA e RAG
+•	API de LLM;
+•	embeddings;
+•	busca vetorial;
+•	busca textual;
+•	reranking simples;
+•	respostas com citações.
+Processamento documental
+•	parser de PDF;
+•	parser de HTML;
+•	sanitização;
+•	extração de metadados;
+•	geração de hash;
+•	fila de processamento.
+Agendamentos
+•	Cloud Scheduler;
+•	Pub/Sub ou Cloud Tasks;
+•	workers assíncronos.
+________________________________________
+11. Estrutura mínima do banco de dados
+users
+professionals
+caregivers
+children
+consultations
+growthRecords
+developmentAssessments
+feedingRecords
+sleepRecords
+vaccinationRecords
+clinicalAlerts
+timelineEvents
+reports
+knowledgeSources
+discoveredDocuments
+knowledgeDocuments
+knowledgeVersions
+knowledgeChunks
+scientificReviews
+syncRuns
+auditLogs
+notifications
+________________________________________
+12. Entidades principais
+Child
+type Child = {
+  id: string;
+  professionalId: string;
+  caregiverIds: string[];
+
+  fullName: string;
+  birthDate: string;
+  sexAtBirth: "female" | "male" | "other" | "not_informed";
+
+  gestationalAgeWeeks?: number;
+  birthWeightGrams?: number;
+  birthLengthCm?: number;
+  birthHeadCircumferenceCm?: number;
+  apgar1?: number;
+  apgar5?: number;
+
+  premature: boolean;
+  neonatalHospitalization: boolean;
+
+  active: boolean;
+
+  createdAt: string;
+  updatedAt: string;
+};
+Consultation
+type Consultation = {
+  id: string;
+  childId: string;
+  professionalId: string;
+
+  consultationDate: string;
+  ageInDays: number;
+
+  reason?: string;
+  intervalHistory?: string;
+  clinicalNotes?: string;
+  assessment?: string;
+  plan?: string;
+
+  status: "draft" | "completed" | "cancelled";
+
+  createdAt: string;
+  updatedAt: string;
+};
+KnowledgeDocument
+type KnowledgeDocument = {
+  id: string;
+  sourceId: string;
+
+  title: string;
+  organization: string;
+  sourceUrl: string;
+
+  publicationType: string;
+  topics: string[];
+
+  publicationDate?: string;
+  revisionDate?: string;
+
+  evidenceScore: number;
+
+  reviewStatus:
+    | "discovered"
+    | "processing"
+    | "pending_review"
+    | "approved"
+    | "published"
+    | "rejected"
+    | "superseded"
+    | "withdrawn";
+
+  currentVersionId?: string;
+
+  createdAt: string;
+  updatedAt: string;
+};
+________________________________________
+13. Regras de segurança
+Controle de acesso
+•	o profissional acessa apenas seus pacientes;
+•	o responsável acessa apenas crianças vinculadas;
+•	o administrador científico não acessa dados clínicos sem autorização;
+•	o revisor científico acessa apenas a base documental;
+•	operações críticas exigem autenticação recente.
+Proteções
+•	criptografia em trânsito;
+•	controle por regras do Firestore;
+•	logs de acesso;
+•	trilha de alterações;
+•	App Check;
+•	rate limiting;
+•	validação de arquivos;
+•	antivírus;
+•	sanitização de HTML;
+•	bloqueio de scripts;
+•	backup automático.
+________________________________________
+14. LGPD no MVP
+Requisitos obrigatórios
+•	consentimento;
+•	finalidade de tratamento;
+•	minimização de dados;
+•	controle de acesso;
+•	registro de atividades;
+•	exportação de dados;
+•	correção de dados;
+•	exclusão ou anonimização, quando aplicável;
+•	política de retenção;
+•	termo de responsabilidade;
+•	registro de incidentes.
+Dados sensíveis
+Dados de saúde devem receber proteção diferenciada.
+________________________________________
+15. Itens fora do MVP
+Não incluir inicialmente:
+•	integração com laboratórios;
+•	prescrição eletrônica;
+•	teleconsulta;
+•	cobrança;
+•	integração com convênios;
+•	integração automática com o PNI;
+•	agenda médica completa;
+•	aplicativo nativo;
+•	funcionamento offline completo;
+•	reconhecimento de voz;
+•	interpretação automática de exames;
+•	protocolos licenciados;
+•	diagnóstico automatizado;
+•	recomendação farmacológica;
+•	integração com dispositivos;
+•	portal familiar completo;
+•	notificações por WhatsApp;
+•	análise preditiva avançada.
+________________________________________
+16. Backlog priorizado
+Prioridade P0 — Obrigatório
+•	autenticação;
+•	perfis;
+•	cadastro da criança;
+•	consulta;
+•	crescimento;
+•	desenvolvimento;
+•	alimentação;
+•	sono;
+•	vacinação;
+•	alertas;
+•	linha do tempo;
+•	PDF;
+•	base científica;
+•	busca RAG;
+•	citações;
+•	revisão documental;
+•	auditoria.
+Prioridade P1 — Importante
+•	portal do responsável;
+•	notificações;
+•	resumo longitudinal;
+•	comparação entre consultas;
+•	painel científico;
+•	detecção de atualização por hash;
+•	importação de PDF;
+•	monitoramento de URL.
+Prioridade P2 — Posterior
+•	PubMed automático;
+•	Crossref;
+•	reranking avançado;
+•	detecção de conflitos;
+•	comparação semântica de versões;
+•	propostas de atualização de regras;
+•	painel de indicadores.
+________________________________________
+17. Plano de implementação por fases
+Fase 0 — Preparação
+Entregas
+•	definição de escopo;
+•	arquitetura;
+•	mapa de telas;
+•	modelo de dados;
+•	permissões;
+•	repositório;
+•	ambientes;
+•	CI/CD;
+•	documentação.
+Critério de aceite
+•	ambiente local funcional;
+•	ambiente de testes;
+•	ambiente de produção separado;
+•	deploy automatizado;
+•	regras básicas de segurança.
+________________________________________
+Fase 1 — Fundação do sistema
+Entregas
+•	login;
+•	recuperação de senha;
+•	perfis;
+•	permissões;
+•	cadastro de profissional;
+•	cadastro de responsável;
+•	cadastro da criança;
+•	auditoria inicial.
+Critério de aceite
+•	cada perfil vê apenas o que lhe pertence;
+•	cadastro completo salvo;
+•	validações funcionando;
+•	nenhuma operação sem autenticação.
+________________________________________
+Fase 2 — Núcleo clínico
+Entregas
+•	consulta;
+•	crescimento;
+•	desenvolvimento;
+•	alimentação;
+•	sono;
+•	vacinação;
+•	linha do tempo.
+Critério de aceite
+•	consulta pode ser salva como rascunho;
+•	medidas aparecem em histórico;
+•	marcos são registrados;
+•	vacinas são controladas;
+•	dados permanecem vinculados à criança correta.
+________________________________________
+Fase 3 — Alertas e relatórios
+Entregas
+•	motor de regras;
+•	alertas;
+•	classificação por gravidade;
+•	resolução de alertas;
+•	relatório PDF;
+•	resumo clínico.
+Critério de aceite
+•	alertas são reproduzíveis;
+•	toda regra possui fonte;
+•	relatório pode ser revisado antes da emissão;
+•	relatório não inclui dados inventados.
+________________________________________
+Fase 4 — RAG inicial
+Entregas
+•	upload de PDF;
+•	extração;
+•	fragmentação;
+•	embeddings;
+•	busca vetorial;
+•	resposta com citação;
+•	filtros por tema;
+•	controle de versão.
+Critério de aceite
+•	toda resposta contém referência;
+•	ausência de evidência gera resposta de insuficiência;
+•	documento rejeitado não aparece;
+•	versão antiga não é recuperada como vigente.
+________________________________________
+Fase 5 — Autoalimentação supervisionada
+Entregas
+•	cadastro de fontes;
+•	monitoramento de URLs;
+•	RSS;
+•	sitemap;
+•	detecção por hash;
+•	fila de documentos;
+•	revisão;
+•	publicação;
+•	logs de sincronização.
+Critério de aceite
+•	documento novo é detectado;
+•	atualização gera nova versão;
+•	conteúdo não é publicado sem aprovação;
+•	erros são registrados;
+•	fonte pode ser desativada.
+________________________________________
+Fase 6 — Validação e piloto
+Entregas
+•	testes automatizados;
+•	testes clínicos;
+•	testes de segurança;
+•	testes de usabilidade;
+•	correções;
+•	piloto com poucos usuários;
+•	documentação.
+Critério de aceite
+•	fluxos críticos aprovados;
+•	sem erros graves;
+•	segurança revisada;
+•	fontes científicas verificadas;
+•	backup testado;
+•	recuperação de dados testada.
+________________________________________
+18. Planejamento em sprints
+Sprint 1
+•	projeto;
+•	autenticação;
+•	perfis;
+•	regras de acesso;
+•	estrutura do banco.
+Sprint 2
+•	cadastro da criança;
+•	responsáveis;
+•	dados perinatais;
+•	listagem e busca.
+Sprint 3
+•	consulta;
+•	rascunho;
+•	evolução clínica;
+•	linha do tempo.
+Sprint 4
+•	crescimento;
+•	gráficos;
+•	cálculos;
+•	validação de medidas.
+Sprint 5
+•	desenvolvimento;
+•	marcos;
+•	alertas básicos.
+Sprint 6
+•	alimentação;
+•	sono;
+•	vacinação.
+Sprint 7
+•	motor de regras;
+•	alertas;
+•	painel clínico.
+Sprint 8
+•	relatórios;
+•	PDF;
+•	resumo longitudinal.
+Sprint 9
+•	base científica;
+•	upload;
+•	extração;
+•	metadados;
+•	revisão.
+Sprint 10
+•	chunks;
+•	embeddings;
+•	busca;
+•	citações.
+Sprint 11
+•	monitoramento de fontes;
+•	hash;
+•	RSS;
+•	sitemap;
+•	sincronização.
+Sprint 12
+•	testes;
+•	segurança;
+•	piloto;
+•	ajustes;
+•	deploy.
+________________________________________
+19. Critérios gerais de aceite
+O MVP estará apto ao piloto quando:
+•	profissionais puderem cadastrar crianças;
+•	consultas puderem ser registradas;
+•	medidas puderem ser acompanhadas;
+•	marcos puderem ser avaliados;
+•	vacinação puder ser controlada;
+•	alertas básicos funcionarem;
+•	relatórios puderem ser emitidos;
+•	RAG responder com fontes;
+•	documentos puderem ser revisados;
+•	fontes autorizadas puderem ser monitoradas;
+•	nenhuma atualização científica for publicada diretamente;
+•	todas as operações críticas tiverem log;
+•	dados de usuários diferentes permanecerem isolados;
+•	backup e restauração tiverem sido testados.
+________________________________________
+20. Indicadores do MVP
+Produto
+•	número de crianças cadastradas;
+•	consultas concluídas;
+•	tempo médio de preenchimento;
+•	campos abandonados;
+•	relatórios gerados;
+•	alertas resolvidos.
+Clínico
+•	vacinas pendentes identificadas;
+•	marcos ausentes sinalizados;
+•	quedas de curva detectadas;
+•	retornos vencidos;
+•	orientações registradas.
+RAG
+•	documentos ativos;
+•	documentos pendentes;
+•	fontes sincronizadas;
+•	falhas de sincronização;
+•	respostas com citação;
+•	consultas sem evidência suficiente;
+•	documentos atualizados;
+•	conteúdos rejeitados.
+________________________________________
+21. Equipe mínima
+•	1 responsável pelo produto;
+•	1 desenvolvedor full stack;
+•	1 profissional de UX/UI, mesmo que parcial;
+•	1 pediatra ou médico revisor;
+•	1 profissional responsável por privacidade e segurança, mesmo que consultivo;
+•	1 pessoa para validação científica do RAG.
+Em desenvolvimento assistido por IA, parte das funções técnicas pode ser concentrada, mas a revisão clínica não deve ser substituída.
+________________________________________
+22. Prazo estimado
+Cenário enxuto
+•	12 a 16 semanas.
+Cenário mais seguro
+•	16 a 24 semanas.
+A diferença depende principalmente de:
+•	validação das curvas;
+•	qualidade do motor de regras;
+•	revisão das fontes;
+•	segurança;
+•	testes clínicos;
+•	complexidade dos relatórios.
+________________________________________
+23. Estratégia de lançamento
+Piloto inicial
+•	1 a 3 profissionais;
+•	20 a 50 crianças;
+•	duração de 30 a 60 dias;
+•	ambiente controlado;
+•	coleta estruturada de erros;
+•	sem liberação pública.
+Após o piloto
+•	corrigir falhas;
+•	revisar regras;
+•	simplificar formulários;
+•	ajustar alertas;
+•	melhorar respostas do RAG;
+•	revisar consentimentos;
+•	preparar expansão.
+________________________________________
+24. Resultado esperado do MVP
+Ao final, o produto deverá permitir:
+Cadastrar criança
+    ↓
+Registrar consulta
+    ↓
+Acompanhar crescimento
+    ↓
+Avaliar desenvolvimento
+    ↓
+Registrar alimentação, sono e vacinas
+    ↓
+Gerar alertas
+    ↓
+Consultar base científica
+    ↓
+Emitir relatório
+    ↓
+Detectar atualização em fonte oficial
+    ↓
+Enviar conteúdo para revisão
+    ↓
+Publicar nova versão no RAG
+Decisão de produto
+O MVP deve priorizar três pilares:
+1.	registro clínico simples;
+2.	alertas determinísticos;
+3.	base científica supervisionada.
+A autoalimentação completa, com análise avançada de conflitos e atualização semântica sofisticada, deve ser construída após a validação do núcleo clínico.
+
