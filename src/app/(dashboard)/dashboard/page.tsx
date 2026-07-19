@@ -1,8 +1,27 @@
 'use client';
 
-import React from 'react';
+export const dynamic = 'force-dynamic';
+
+import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { listChildrenByProfessional } from '@/services/childService';
+import { listConsultationsByProfessional } from '@/services/consultationService';
+import { listDevelopmentAssessmentsByProfessional } from '@/services/developmentService';
+import { listFeedingRecordsByProfessional } from '@/services/feedingService';
+import { listSleepRecordsByProfessional } from '@/services/sleepService';
+import { listVaccinationRecordsByProfessional } from '@/services/vaccinationService';
+import {
+  countActiveChildren,
+  countConsultationsOnDate,
+  countRequiringFollowUp,
+  countChildrenWithLatestVaccinationStatus,
+  recentConsultations,
+} from '@/lib/dashboard/stats';
 import { Card, CardHeader } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Alert } from '@/components/ui/Alert';
+import type { Child, Consultation, ConsultationStatus } from '@/lib/types';
 
 interface StatCardProps {
   label: string;
@@ -44,94 +63,163 @@ function StatCard({ label, value, icon, description }: StatCardProps) {
   );
 }
 
+const consultationStatusLabels: Record<ConsultationStatus, string> = {
+  draft: 'Rascunho',
+  completed: 'Finalizada',
+  cancelled: 'Cancelada',
+};
+
 export default function DashboardPage() {
   const { userProfile } = useAuth();
 
-  const firstName = userProfile?.displayName?.split(' ')[0] ?? 'Profissional';
+  const [children, setChildren] = useState<Child[]>([]);
+  const [consultations, setConsultations] = useState<Consultation[]>([]);
+  const [followUpCount, setFollowUpCount] = useState(0);
+  const [lateVaccinationCount, setLateVaccinationCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!userProfile) return;
+    (async () => {
+      try {
+        const [allChildren, allConsultations, allDevelopment, allFeeding, allSleep, allVaccination] = await Promise.all([
+          listChildrenByProfessional(userProfile.uid),
+          listConsultationsByProfessional(userProfile.uid),
+          listDevelopmentAssessmentsByProfessional(userProfile.uid),
+          listFeedingRecordsByProfessional(userProfile.uid),
+          listSleepRecordsByProfessional(userProfile.uid),
+          listVaccinationRecordsByProfessional(userProfile.uid),
+        ]);
+        setChildren(allChildren);
+        setConsultations(allConsultations);
+        setFollowUpCount(countRequiringFollowUp(allDevelopment, allFeeding, allSleep));
+        setLateVaccinationCount(countChildrenWithLatestVaccinationStatus(allVaccination, 'atrasada'));
+      } catch {
+        setError('Não foi possível carregar os dados do dashboard.');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [userProfile]);
+
+  const childNames = useMemo(() => Object.fromEntries(children.map((c) => [c.id, c.fullName])), [children]);
+  const today = new Date().toISOString().slice(0, 10);
+  const activeChildrenCount = countActiveChildren(children);
+  const consultationsToday = countConsultationsOnDate(consultations, today);
+  const lastConsultations = useMemo(() => recentConsultations(consultations, 5), [consultations]);
+
+  const firstName = userProfile?.displayName?.split(' ')[0] ?? 'Profissional';
   const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? 'Bom dia' :
-    hour < 18 ? 'Boa tarde' :
-                'Boa noite';
+  const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Cabeçalho de boas-vindas */}
-      <div>
-        <h2 className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>
-          {greeting}, {firstName}! 👋
-        </h2>
-        <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-          {new Date().toLocaleDateString('pt-BR', {
-            weekday: 'long',
-            day:     'numeric',
-            month:   'long',
-            year:    'numeric',
-          })}
-        </p>
+      {/* Cabeçalho de boas-vindas + ações rápidas */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>
+            {greeting}, {firstName}! 👋
+          </h2>
+          <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="secondary" href="/pacientes/novo">+ Novo paciente</Button>
+          <Button href="/pacientes">+ Nova consulta</Button>
+        </div>
       </div>
 
-      {/* Cards de estatísticas — placeholder para MVP */}
+      {error && <Alert variant="error">{error}</Alert>}
+
+      {/* Cards de estatísticas — dados reais do profissional autenticado */}
       <section aria-label="Resumo">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             icon="👶"
             label="Pacientes ativos"
-            value="—"
-            description="Nenhum cadastrado ainda"
+            value={loading ? '—' : activeChildrenCount}
+            description={!loading && activeChildrenCount === 0 ? 'Nenhum cadastrado ainda' : undefined}
           />
           <StatCard
             icon="📋"
             label="Consultas hoje"
-            value="—"
-            description="Agenda ainda não configurada"
+            value={loading ? '—' : consultationsToday}
           />
           <StatCard
-            icon="⚠️"
-            label="Alertas pendentes"
-            value="—"
-            description="Sem alertas no momento"
+            icon="📝"
+            label="Necessitam acompanhamento"
+            value={loading ? '—' : followUpCount}
+            description="Sinalizados pelo profissional (desenvolvimento, alimentação, sono)"
           />
           <StatCard
             icon="💉"
-            label="Vacinas atrasadas"
-            value="—"
-            description="Aguardando pacientes"
+            label="Vacinação atrasada"
+            value={loading ? '—' : lateVaccinationCount}
+            description="Segundo o último status registrado por criança"
           />
         </div>
       </section>
 
-      {/* Ações rápidas */}
+      {/* Últimas consultas */}
       <Card>
-        <CardHeader
-          title="Primeiros passos"
-          description="Configure seu ambiente para começar a usar o PueriCare."
-        />
-        <ol className="flex flex-col gap-3">
-          {[
-            { step: '1', text: 'Cadastre o primeiro paciente', href: '/pacientes/novo' },
-            { step: '2', text: 'Registre uma consulta de puericultura', href: '/pacientes' },
-            { step: '3', text: 'Adicione o calendário vacinal', href: '/vacinacao' },
-          ].map(({ step, text, href }) => (
-            <li key={step} className="flex items-center gap-3">
-              <div
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-                style={{ background: 'var(--color-primary)' }}
-              >
-                {step}
-              </div>
-              <a
-                href={href}
-                className="text-sm font-medium transition-colors hover:underline"
-                style={{ color: 'var(--color-primary)' }}
-              >
-                {text}
-              </a>
-            </li>
-          ))}
-        </ol>
+        <CardHeader title="Últimas consultas" />
+        {loading ? (
+          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Carregando...</p>
+        ) : lastConsultations.length === 0 ? (
+          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Nenhuma consulta registrada ainda.</p>
+        ) : (
+          <ul className="flex flex-col gap-2" role="list">
+            {lastConsultations.map((c) => (
+              <li key={c.id}>
+                <Link
+                  href={`/pacientes/${c.childId}/consultas/${c.id}`}
+                  className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[var(--color-primary-light)]"
+                >
+                  <span style={{ color: 'var(--color-text)' }}>{childNames[c.childId] ?? 'Paciente'}</span>
+                  <span style={{ color: 'var(--color-text-muted)' }}>
+                    {new Date(c.consultationDate + 'T00:00:00').toLocaleDateString('pt-BR')} · {consultationStatusLabels[c.status]}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
+
+      {/* Primeiros passos — só enquanto não há nenhum paciente cadastrado */}
+      {!loading && children.length === 0 && (
+        <Card>
+          <CardHeader
+            title="Primeiros passos"
+            description="Configure seu ambiente para começar a usar o PueriCare."
+          />
+          <ol className="flex flex-col gap-3">
+            {[
+              { step: '1', text: 'Cadastre o primeiro paciente', href: '/pacientes/novo' },
+              { step: '2', text: 'Registre uma consulta de puericultura', href: '/pacientes' },
+              { step: '3', text: 'Adicione o calendário vacinal', href: '/vacinacao' },
+            ].map(({ step, text, href }) => (
+              <li key={step} className="flex items-center gap-3">
+                <div
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+                  style={{ background: 'var(--color-primary)' }}
+                >
+                  {step}
+                </div>
+                <a
+                  href={href}
+                  className="text-sm font-medium transition-colors hover:underline"
+                  style={{ color: 'var(--color-primary)' }}
+                >
+                  {text}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </Card>
+      )}
     </div>
   );
 }
