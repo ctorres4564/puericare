@@ -116,10 +116,21 @@ export default function DashboardPage() {
         setActiveAlertCount(alertCount);
 
         // Verifica se alguma query falhou e mostra aviso (não erro bloqueante)
-        const failedCount = results.filter((r) => r.status === 'rejected').length;
-        if (failedCount > 0) {
-          console.warn(`[Dashboard] ${failedCount} consulta(s) ao Firestore falharam. Verifique se as regras de segurança (firestore.rules) estão publicadas.`);
-          setError('Alguns dados podem estar incompletos. Verifique se as regras do Firestore foram publicadas no Firebase Console.');
+        const queryLabels = [
+          'children', 'consultations', 'developmentAssessments',
+          'feedingRecords', 'sleepRecords', 'vaccinationRecords', 'clinicalAlerts',
+        ];
+        const failed = results
+          .map((r, i) => ({ r, label: queryLabels[i] }))
+          .filter(({ r }) => r.status === 'rejected') as { r: PromiseRejectedResult; label: string }[];
+
+        if (failed.length > 0) {
+          failed.forEach(({ r, label }) => {
+            const err = r.reason as { code?: string; message?: string };
+            console.error(`[Dashboard] Falha ao ler "${label}": ${err?.code ?? '?'} — ${err?.message ?? r.reason}`);
+          });
+          const firstCode = (failed[0].r.reason as { code?: string })?.code ?? 'erro desconhecido';
+          setError(`Alguns dados podem estar incompletos (${failed.length} consulta(s) falharam — ${firstCode}). Veja o console do navegador (F12) para detalhes.`);
         }
       } catch (err) {
         console.error('[Dashboard] Erro ao carregar dados:', err);
