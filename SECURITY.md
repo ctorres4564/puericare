@@ -23,4 +23,9 @@ não existem estão listados em "Pendências", não aqui.
 - Proteção de rotas do dashboard é apenas client-side (sem verificação de sessão/token no servidor).
 - Sem criptografia de campos sensíveis (CPF, histórico médico) — os tipos hoje não incluem CPF; se for adicionado, deve ser tratado antes de ir a produção.
 - Sem fluxo de consentimento LGPD nem "direito ao esquecimento" implementados.
-- Sem CI/CD, testes automatizados ou headers de segurança (CSP, HSTS etc.).
+- Sem CI/CD ou headers de segurança (CSP, HSTS etc.).
+- **Testes automatizados**: existem 259 testes (unitários com mock de Firestore
+  + regras via Firebase Emulator, ver `package.json` → `test`/`test:rules`).
+  **Testes E2E (navegador, ponta a ponta) não existem** — `playwright` não é
+  dependência do projeto; o script `test:e2e` foi removido do `package.json`
+  em vez de deixado quebrado. Pendência futura, não uma dívida oculta.

@@ -26,8 +26,12 @@ npm run dev
 - `lint` – linting (ESLint)
 - `typecheck` – verificação de tipos TypeScript
 - `test` – testes unitários (Vitest)
-- `test:e2e` – testes end‑to‑end (Playwright)
+- `test:rules` – testes das Firestore Security Rules (Firebase Emulator)
+- `test:all` – `test` + `test:rules`
 - `build` – build de produção
+
+Testes end-to-end (navegador) ainda não existem neste projeto — `playwright`
+não é uma dependência instalada. Ver `SECURITY.md` § Pendências.
 
 **Variáveis de ambiente** – veja `.env.example`.
 
