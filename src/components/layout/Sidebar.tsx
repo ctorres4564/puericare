@@ -1,8 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/lib/auth/AuthProvider';
+import { countActiveAlerts } from '@/services/alertService';
 
 interface NavItem {
   label: string;
@@ -11,16 +13,26 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard',   href: '/dashboard',          icon: '🏠' },
-  { label: 'Pacientes',   href: '/pacientes',           icon: '👶' },
-  { label: 'Consultas',   href: '/consultas',           icon: '📋' },
-  { label: 'Crescimento', href: '/crescimento',         icon: '📈' },
-  { label: 'Vacinação',   href: '/vacinacao',           icon: '💉' },
-  { label: 'Conhecimento',href: '/conhecimento',        icon: '🔬' },
+  { label: 'Dashboard',   href: '/dashboard',   icon: '🏠' },
+  { label: 'Pacientes',   href: '/pacientes',   icon: '👶' },
+  { label: 'Consultas',   href: '/consultas',   icon: '📋' },
+  { label: 'Crescimento', href: '/crescimento', icon: '📈' },
+  { label: 'Vacinação',   href: '/vacinacao',   icon: '💉' },
+  { label: 'Alertas',     href: '/alertas',     icon: '🔔' },
+  { label: 'Conhecimento',href: '/conhecimento',icon: '🔬' },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { userProfile } = useAuth();
+  const [alertCount, setAlertCount] = useState(0);
+
+  useEffect(() => {
+    if (!userProfile) return;
+    countActiveAlerts(userProfile.uid)
+      .then(setAlertCount)
+      .catch(() => {/* silencioso — badge é informativo */});
+  }, [userProfile]);
 
   return (
     <aside
@@ -61,7 +73,16 @@ export function Sidebar() {
                   aria-current={isActive ? 'page' : undefined}
                 >
                   <span className="text-base" aria-hidden="true">{icon}</span>
-                  {label}
+                  <span className="flex-1">{label}</span>
+                  {href === '/alertas' && alertCount > 0 && (
+                    <span
+                      className="flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white"
+                      style={{ background: 'var(--color-danger, #ef4444)' }}
+                      aria-label={`${alertCount} alertas ativos`}
+                    >
+                      {alertCount > 99 ? '99+' : alertCount}
+                    </span>
+                  )}
                 </Link>
               </li>
             );

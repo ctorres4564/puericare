@@ -10,3 +10,5 @@ export * from './development';
 export * from './feeding';
 export * from './sleep';
 export * from './vaccination';
+export * from './alert';
+

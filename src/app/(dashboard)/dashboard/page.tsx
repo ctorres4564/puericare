@@ -11,6 +11,7 @@ import { listDevelopmentAssessmentsByProfessional } from '@/services/development
 import { listFeedingRecordsByProfessional } from '@/services/feedingService';
 import { listSleepRecordsByProfessional } from '@/services/sleepService';
 import { listVaccinationRecordsByProfessional } from '@/services/vaccinationService';
+import { countActiveAlerts } from '@/services/alertService';
 import {
   countActiveChildren,
   countConsultationsOnDate,
@@ -76,6 +77,7 @@ export default function DashboardPage() {
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [followUpCount, setFollowUpCount] = useState(0);
   const [lateVaccinationCount, setLateVaccinationCount] = useState(0);
+  const [activeAlertCount, setActiveAlertCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,18 +85,20 @@ export default function DashboardPage() {
     if (!userProfile) return;
     (async () => {
       try {
-        const [allChildren, allConsultations, allDevelopment, allFeeding, allSleep, allVaccination] = await Promise.all([
+        const [allChildren, allConsultations, allDevelopment, allFeeding, allSleep, allVaccination, alertCount] = await Promise.all([
           listChildrenByProfessional(userProfile.uid),
           listConsultationsByProfessional(userProfile.uid),
           listDevelopmentAssessmentsByProfessional(userProfile.uid),
           listFeedingRecordsByProfessional(userProfile.uid),
           listSleepRecordsByProfessional(userProfile.uid),
           listVaccinationRecordsByProfessional(userProfile.uid),
+          countActiveAlerts(userProfile.uid),
         ]);
         setChildren(allChildren);
         setConsultations(allConsultations);
         setFollowUpCount(countRequiringFollowUp(allDevelopment, allFeeding, allSleep));
         setLateVaccinationCount(countChildrenWithLatestVaccinationStatus(allVaccination, 'atrasada'));
+        setActiveAlertCount(alertCount);
       } catch {
         setError('Não foi possível carregar os dados do dashboard.');
       } finally {
@@ -158,6 +162,12 @@ export default function DashboardPage() {
             label="Vacinação atrasada"
             value={loading ? '—' : lateVaccinationCount}
             description="Segundo o último status registrado por criança"
+          />
+          <StatCard
+            icon="🔔"
+            label="Alertas ativos"
+            value={loading ? '—' : activeAlertCount}
+            description={activeAlertCount > 0 ? 'Clique para ver os alertas' : 'Nenhum alerta ativo'}
           />
         </div>
       </section>

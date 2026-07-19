@@ -34,13 +34,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsub = onAuthStateChanged(auth, async (usr) => {
       setUser(usr);
       if (usr) {
-        try {
-          const profile = await getUserProfile(usr.uid);
-          setUserProfile(profile);
-        } catch (err) {
-          console.error('[AuthProvider] Erro ao carregar perfil:', err);
-          setUserProfile(null);
+        // Tenta carregar o perfil com até 3 tentativas (token Firebase pode demorar para propagar)
+        let profile = null;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            profile = await getUserProfile(usr.uid);
+            break;
+          } catch (err: unknown) {
+            const code = (err as { code?: string }).code ?? '';
+            if (code === 'permission-denied' && attempt < 3) {
+              // Aguarda antes de tentar novamente (exponential backoff)
+              await new Promise((r) => setTimeout(r, attempt * 800));
+            } else {
+              console.error('[AuthProvider] Erro ao carregar perfil:', err);
+              break;
+            }
+          }
         }
+        setUserProfile(profile);
       } else {
         setUserProfile(null);
       }
