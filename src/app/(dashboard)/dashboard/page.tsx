@@ -111,7 +111,7 @@ export default function DashboardPage() {
         <ol className="flex flex-col gap-3">
           {[
             { step: '1', text: 'Cadastre o primeiro paciente', href: '/pacientes/novo' },
-            { step: '2', text: 'Registre uma consulta de puericultura', href: '/consultas/nova' },
+            { step: '2', text: 'Registre uma consulta de puericultura', href: '/pacientes' },
             { step: '3', text: 'Adicione o calendário vacinal', href: '/vacinacao' },
           ].map(({ step, text, href }) => (
             <li key={step} className="flex items-center gap-3">

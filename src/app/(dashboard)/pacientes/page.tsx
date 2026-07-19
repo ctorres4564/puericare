@@ -90,7 +90,7 @@ export default function PacientesPage() {
                 </p>
               </div>
 
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
                 {confirmingId === child.id ? (
                   <>
                     <span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
@@ -108,6 +108,14 @@ export default function PacientesPage() {
                     <Button variant="secondary" size="sm" href={`/pacientes/${child.id}/editar`}>
                       Editar
                     </Button>
+                    <Button variant="secondary" size="sm" href={`/pacientes/${child.id}/consultas`}>
+                      Consultas
+                    </Button>
+                    {child.active && (
+                      <Button size="sm" href={`/pacientes/${child.id}/consultas/nova`}>
+                        Iniciar consulta
+                      </Button>
+                    )}
                     <Button variant="ghost" size="sm" onClick={() => setConfirmingId(child.id)}>
                       Excluir
                     </Button>

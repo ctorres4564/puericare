@@ -329,8 +329,32 @@ Justificativa: o código que existe é de boa qualidade — base de tipos, compo
 
 ## Riscos remanescentes (não bloqueiam o Sprint 2, mas seguem em aberto)
 
-- Ausência total de testes automatizados reais (unitários ou e2e) em `app/`.
-- Nenhum repositório remoto configurado — sem backup, sem histórico compartilhado, sem possibilidade de PR/review.
-- Guarda de rotas do dashboard permanece client-side (autenticação/autorização real ainda depende só das regras do Firestore, não de verificação server-side).
-- Monorepo acidental na raiz (`c:/puericultura/package.json`, `node_modules`) continua presente e já causou um falso positivo (script `test`); recomenda-se removê-lo ou isolá-lo antes que cause outra confusão.
+- Ausência total de testes automatizados reais (unitários ou e2e) em `app/`. **[Resolvido após esta auditoria — ver adendo de Sprint 3 abaixo: 106 testes automatizados (unitários + regras) em `app/`.]**
+- Nenhum repositório remoto configurado — sem backup, sem histórico compartilhado, sem possibilidade de PR/review. **[Resolvido: `origin` → `https://github.com/ctorres4564/puericare.git`, sincronizado.]**
+- Guarda de rotas do dashboard permanece client-side (autenticação/autorização real ainda depende só das regras do Firestore, não de verificação server-side). **[Reavaliado e mantido deliberadamente — ver ADENDO seguinte: sem exposição real de dados; migrar exigiria mudar o fluxo de login do Sprint 1.]**
+- Monorepo acidental na raiz (`c:/puericultura/package.json`, `node_modules`) continua presente e já causou um falso positivo (script `test`); recomenda-se removê-lo ou isolá-lo antes que cause outra confusão. **[Resolvido: estrutura acidental removida da raiz.]**
+
+---
+
+# ADENDO — Sprint 3: Consulta, Rascunho, Evolução Clínica e Linha do Tempo (2026-07-19)
+
+**Escopo**: coleção `consultations` (criação, rascunho, edição, finalização,
+cancelamento), regras de segurança correspondentes, e páginas de linha do
+tempo (por paciente e global). Detalhes completos em
+`documentacao/sprint-3-consulta.md`. Não reabre Sprint 1/2 — `users` e
+`children` permanecem com as mesmas regras já auditadas.
+
+- **Testes automatizados no projeto (total atualizado)**: 106 — 64 unitários
+  (mock de Firestore, sem rede) + 42 de regras (Firestore Emulator, nunca
+  produção). Todos verdes; sem `skip`/`todo`.
+- **Homologação funcional** contra o projeto Firebase real, com dados
+  descartáveis removidos ao final: 14/14 verificações (criação, rascunho,
+  retomada/edição, finalização, associação ao paciente, ordenação
+  cronológica, isolamento entre profissionais, bloqueio de nova consulta
+  após soft delete do paciente com histórico preservado, persistência após
+  recarregar).
+- **Build/lint/typecheck**: sem erros; mesmos 2 avisos pré-existentes e
+  alheios (`watch()` do react-hook-form).
+- Regras de `consultations` publicadas no projeto real (`puericultura-62969`),
+  idênticas ao arquivo versionado.
 - `next start` local acusa incompatibilidade com `output: "standalone"` do `next.config.mjs` (pré-existente, não introduzido pelo Sprint 2); não impediu a verificação, mas deploy via `next start` direto não é o modo correto para essa configuração.

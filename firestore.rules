@@ -35,6 +35,10 @@ service cloud.firestore {
       return hasRole('PROFESSIONAL');
     }
 
+    function childOf(childId) {
+      return get(/databases/$(database)/documents/children/$(childId)).data;
+    }
+
     /* ── users/{userId} ── */
     match /users/{userId} {
       allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
@@ -77,6 +81,33 @@ service cloud.firestore {
         isAdmin() ||
         (
           resource.data.professionalId == request.auth.uid &&
+          request.resource.data.professionalId == resource.data.professionalId
+        )
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    /* ── consultations/{consultationId} ── Sprint 3 ── */
+    match /consultations/{consultationId} {
+      // Sem portal do responsável nesta fase (v2.0) — só o profissional dono e ADMIN leem.
+      allow read: if isSignedIn() && (
+        resource.data.professionalId == request.auth.uid || isAdmin()
+      );
+
+      // Só cria quem é PROFESSIONAL, dono da criança referenciada, e com a
+      // criança ativa (não inicia consulta nova para paciente desativado).
+      allow create: if isProfessional()
+        && request.resource.data.professionalId == request.auth.uid
+        && childOf(request.resource.data.childId).professionalId == request.auth.uid
+        && childOf(request.resource.data.childId).active == true;
+
+      // Só o profissional dono (ou admin) edita; childId e professionalId são imutáveis.
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        (
+          resource.data.professionalId == request.auth.uid &&
+          request.resource.data.childId == resource.data.childId &&
           request.resource.data.professionalId == resource.data.professionalId
         )
       );

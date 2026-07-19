@@ -54,6 +54,20 @@ function childDoc(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
+function consultationDoc(overrides: Partial<Record<string, unknown>> = {}) {
+  const now = new Date().toISOString();
+  return {
+    childId: 'child-1',
+    professionalId: 'pro-a',
+    consultationDate: '2025-06-01',
+    ageInDays: 150,
+    status: 'draft',
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  };
+}
+
 beforeAll(async () => {
   testEnv = await initializeTestEnvironment({
     projectId: PROJECT_ID,
@@ -275,6 +289,148 @@ describe('firestore.rules — children/{childId}', () => {
     });
     const db = testEnv.authenticatedContext('admin-a').firestore();
     await assertSucceeds(deleteDoc(doc(db, 'children', 'child-1')));
+  });
+});
+
+describe('firestore.rules — consultations/{consultationId} (Sprint 3)', () => {
+  test('profissional cria consulta (rascunho) para seu próprio paciente ativo', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'pro-a'), userDoc({ uid: 'pro-a', role: 'PROFESSIONAL' }));
+      await setDoc(doc(ctx.firestore(), 'children', 'child-1'), childDoc({ professionalId: 'pro-a', active: true }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    const ref = doc(collection(db, 'consultations'));
+    await assertSucceeds(setDoc(ref, consultationDoc({ professionalId: 'pro-a', childId: 'child-1' })));
+  });
+
+  test('profissional NÃO cria consulta com professionalId de outro', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'pro-a'), userDoc({ uid: 'pro-a', role: 'PROFESSIONAL' }));
+      await setDoc(doc(ctx.firestore(), 'children', 'child-1'), childDoc({ professionalId: 'pro-a', active: true }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    const ref = doc(collection(db, 'consultations'));
+    await assertFails(setDoc(ref, consultationDoc({ professionalId: 'pro-b', childId: 'child-1' })));
+  });
+
+  test('profissional NÃO cria consulta para paciente de outro profissional', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'pro-a'), userDoc({ uid: 'pro-a', role: 'PROFESSIONAL' }));
+      await setDoc(doc(ctx.firestore(), 'children', 'child-1'), childDoc({ professionalId: 'pro-b', active: true }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    const ref = doc(collection(db, 'consultations'));
+    await assertFails(setDoc(ref, consultationDoc({ professionalId: 'pro-a', childId: 'child-1' })));
+  });
+
+  test('profissional NÃO cria consulta para paciente desativado (soft delete)', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'pro-a'), userDoc({ uid: 'pro-a', role: 'PROFESSIONAL' }));
+      await setDoc(doc(ctx.firestore(), 'children', 'child-1'), childDoc({ professionalId: 'pro-a', active: false }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    const ref = doc(collection(db, 'consultations'));
+    await assertFails(setDoc(ref, consultationDoc({ professionalId: 'pro-a', childId: 'child-1' })));
+  });
+
+  test('CAREGIVER não pode criar consulta', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'cg-a'), userDoc({ uid: 'cg-a', role: 'CAREGIVER' }));
+      await setDoc(doc(ctx.firestore(), 'children', 'child-1'), childDoc({ professionalId: 'cg-a', active: true }));
+    });
+    const db = testEnv.authenticatedContext('cg-a').firestore();
+    const ref = doc(collection(db, 'consultations'));
+    await assertFails(setDoc(ref, consultationDoc({ professionalId: 'cg-a', childId: 'child-1' })));
+  });
+
+  test('profissional dono lê sua consulta', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'consultations', 'cons-1'), consultationDoc({ professionalId: 'pro-a' }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    await assertSucceeds(getDoc(doc(db, 'consultations', 'cons-1')));
+  });
+
+  test('profissional NÃO lê consulta de outro profissional (isolamento)', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'consultations', 'cons-1'), consultationDoc({ professionalId: 'pro-a' }));
+    });
+    const db = testEnv.authenticatedContext('pro-b').firestore();
+    await assertFails(getDoc(doc(db, 'consultations', 'cons-1')));
+  });
+
+  test('ADMIN lê qualquer consulta', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'consultations', 'cons-1'), consultationDoc({ professionalId: 'pro-a' }));
+      await setDoc(doc(ctx.firestore(), 'users', 'admin-a'), userDoc({ uid: 'admin-a', role: 'ADMIN' }));
+    });
+    const db = testEnv.authenticatedContext('admin-a').firestore();
+    await assertSucceeds(getDoc(doc(db, 'consultations', 'cons-1')));
+  });
+
+  test('profissional dono salva rascunho (update de conteúdo)', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'consultations', 'cons-1'), consultationDoc({ professionalId: 'pro-a' }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    await assertSucceeds(updateDoc(doc(db, 'consultations', 'cons-1'), { reason: 'Febre' }));
+  });
+
+  test('profissional dono finaliza a consulta (status completed)', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'consultations', 'cons-1'), consultationDoc({ professionalId: 'pro-a' }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    await assertSucceeds(updateDoc(doc(db, 'consultations', 'cons-1'), { status: 'completed' }));
+  });
+
+  test('profissional dono cancela um rascunho (soft delete)', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'consultations', 'cons-1'), consultationDoc({ professionalId: 'pro-a' }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    await assertSucceeds(updateDoc(doc(db, 'consultations', 'cons-1'), { status: 'cancelled' }));
+  });
+
+  test('profissional NÃO pode reatribuir childId ao editar', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'consultations', 'cons-1'), consultationDoc({ professionalId: 'pro-a' }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    await assertFails(updateDoc(doc(db, 'consultations', 'cons-1'), { childId: 'child-2' }));
+  });
+
+  test('profissional NÃO pode reatribuir professionalId ao editar', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'consultations', 'cons-1'), consultationDoc({ professionalId: 'pro-a' }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    await assertFails(updateDoc(doc(db, 'consultations', 'cons-1'), { professionalId: 'pro-b' }));
+  });
+
+  test('profissional NÃO pode editar consulta de outro profissional', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'consultations', 'cons-1'), consultationDoc({ professionalId: 'pro-a' }));
+    });
+    const db = testEnv.authenticatedContext('pro-b').firestore();
+    await assertFails(updateDoc(doc(db, 'consultations', 'cons-1'), { reason: 'Hackeado' }));
+  });
+
+  test('profissional NÃO pode excluir (hard delete) — só ADMIN', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'consultations', 'cons-1'), consultationDoc({ professionalId: 'pro-a' }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    await assertFails(deleteDoc(doc(db, 'consultations', 'cons-1')));
+  });
+
+  test('ADMIN pode excluir (hard delete) uma consulta', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'consultations', 'cons-1'), consultationDoc({ professionalId: 'pro-a' }));
+      await setDoc(doc(ctx.firestore(), 'users', 'admin-a'), userDoc({ uid: 'admin-a', role: 'ADMIN' }));
+    });
+    const db = testEnv.authenticatedContext('admin-a').firestore();
+    await assertSucceeds(deleteDoc(doc(db, 'consultations', 'cons-1')));
   });
 });
 
