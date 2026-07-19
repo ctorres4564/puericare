@@ -2,14 +2,23 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
- * proxy.ts — Proteção de rotas no edge (Next.js 16+).
+ * proxy.ts — Redirecionamentos básicos (Next.js 16+, roda no runtime Node.js
+ * por padrão a partir desta versão — não é mais Edge).
  *
- * O guard principal de autenticação é feito client-side no layout do dashboard.
- * Este proxy adiciona uma camada extra e garante redirecionamentos básicos.
+ * Não verifica sessão/token aqui. O guard de autenticação é feito client-side
+ * em (dashboard)/layout.tsx, e a autorização real dos dados é feita pelas
+ * Firestore Security Rules (firestore.rules) — essa é a camada que de fato
+ * protege os dados, independentemente do que a UI faz.
  *
- * NOTA: A verificação completa de token Firebase no edge requer firebase-admin,
- * incompatível com o Edge Runtime. Para produção de alta segurança, use
- * Server Components com Firebase Admin SDK.
+ * Por que não verificar o token aqui: o Firebase Auth (client SDK, com
+ * browserLocalPersistence) guarda a sessão no IndexedDB do navegador, que não
+ * é enviado nas requisições HTTP. Para o proxy verificar autenticação de
+ * verdade seria necessário migrar para cookies de sessão (Admin SDK
+ * mintando/validando um session cookie), o que muda o fluxo de login/logout
+ * do Sprint 1 e exige uma nova credencial (service account) — decisão
+ * deliberadamente fora do escopo desta etapa de estabilização. O runtime
+ * Node.js do proxy (novidade do Next 16) torna essa migração tecnicamente
+ * viável no futuro, caso vire prioridade.
  */
 
 const PUBLIC_PATHS = ['/login', '/esqueci-senha', '/api'];
