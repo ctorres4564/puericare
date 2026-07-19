@@ -423,4 +423,39 @@ registro/vigilância/triagem/diagnóstico e a auditoria dos requisitos, em
 - **Build/lint/typecheck**: sem erros; mesmos 2 avisos pré-existentes.
 - Regras de `developmentAssessments` publicadas no projeto real, idênticas
   ao arquivo versionado.
+
+---
+
+# ADENDO — Sprint 6: Alimentação, Sono e Vacinação (2026-07-19)
+
+**Escopo**: três coleções novas (`feedingRecords`, `sleepRecords`,
+`vaccinationRecords`), tratadas como domínios distintos, mesma
+infraestrutura (imutável, isolamento, paciente ativo) das entidades
+clínicas dos Sprints 4/5. Detalhes completos em
+`documentacao/sprint-6-alimentacao-sono-vacinacao.md`. Não reabre
+Sprint 1–5.
+
+- **Fonte determinante**: `prd.txt` (seção 6) — alimentação e sono são
+  "campo de texto livre"; vacinação é "campo simples" (Em dia/Atrasada/Não
+  informado). Nenhum calendário vacinal oficial foi codificado — exigiria
+  o PNI (Ministério da Saúde), não incorporado ao projeto; registrado como
+  pendência explícita, não aproximado.
+- **Nenhum diagnóstico ou classificação automática** em nenhum dos três
+  domínios; `requiresFollowUp` e o status de vacinação são sempre definidos
+  manualmente pelo profissional.
+- **Testes automatizados no projeto (total atualizado)**: 259 — 157
+  unitários + 102 de regras (Firestore Emulator, nunca produção). Todos
+  verdes; zero regressão nos 184 testes anteriores.
+- **Homologação funcional** contra o projeto Firebase real, dados
+  descartáveis removidos ao final: 11/11 — criação nos três domínios,
+  associação correta, histórico longitudinal, persistência após
+  recarregar, imutabilidade, integração à linha do tempo (vacinação),
+  isolamento entre profissionais, bloqueio de novo registro com paciente
+  inativo (histórico preservado).
+- Corrigido o link "Vacinação" da barra lateral (`/vacinacao`), inexistente
+  desde o Sprint 1 — agora lista as vacinações do profissional, entre
+  pacientes.
+- **Build/lint/typecheck**: sem erros; mesmos 2 avisos pré-existentes.
+- Regras de `feedingRecords`/`sleepRecords`/`vaccinationRecords` publicadas
+  no projeto real, idênticas ao arquivo versionado.
 - `next start` local acusava incompatibilidade com `output: "standalone"` do `next.config.mjs` (pré-existente, não introduzido pelo Sprint 2). **[Resolvido na etapa de estabilização técnica seguinte: `output: "standalone"` removido — não era necessário para o alvo de deploy (Vercel) e quebrava `next start` local. Ver commit `db8e476`.]**

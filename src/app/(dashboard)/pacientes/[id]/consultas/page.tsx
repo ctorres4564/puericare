@@ -10,9 +10,11 @@ import { getChild } from '@/services/childService';
 import { listConsultationsByProfessional } from '@/services/consultationService';
 import { listGrowthMeasurementsByProfessional } from '@/services/growthService';
 import { listDevelopmentAssessmentsByProfessional } from '@/services/developmentService';
+import { listVaccinationRecordsByProfessional } from '@/services/vaccinationService';
 import { buildTimeline } from '@/lib/children/timeline';
 import { formatAgeInDays } from '@/lib/consultations/ageInDays';
 import { domainLabels, milestoneStatusLabels } from '@/lib/development/labels';
+import { vaccinationStatusLabels, vaccinationStatusBadgeClasses } from '@/lib/vaccination/labels';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Alert';
@@ -22,6 +24,7 @@ import type {
   ConsultationStatus,
   GrowthMeasurement,
   DevelopmentAssessment,
+  VaccinationRecord,
 } from '@/lib/types';
 
 const statusLabels: Record<ConsultationStatus, string> = {
@@ -59,6 +62,7 @@ export default function LinhaDoTempoPage() {
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [measurements, setMeasurements] = useState<GrowthMeasurement[]>([]);
   const [developmentAssessments, setDevelopmentAssessments] = useState<DevelopmentAssessment[]>([]);
+  const [vaccinationRecords, setVaccinationRecords] = useState<VaccinationRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,14 +78,16 @@ export default function LinhaDoTempoPage() {
         }
         setChild(foundChild);
 
-        const [allConsultations, allMeasurements, allDevelopment] = await Promise.all([
+        const [allConsultations, allMeasurements, allDevelopment, allVaccinations] = await Promise.all([
           listConsultationsByProfessional(userProfile.uid),
           listGrowthMeasurementsByProfessional(userProfile.uid),
           listDevelopmentAssessmentsByProfessional(userProfile.uid),
+          listVaccinationRecordsByProfessional(userProfile.uid),
         ]);
         setConsultations(allConsultations.filter((c) => c.childId === childId));
         setMeasurements(allMeasurements.filter((m) => m.childId === childId));
         setDevelopmentAssessments(allDevelopment.filter((a) => a.childId === childId));
+        setVaccinationRecords(allVaccinations.filter((v) => v.childId === childId));
       } catch {
         setError('Não foi possível carregar a linha do tempo.');
       } finally {
@@ -91,8 +97,8 @@ export default function LinhaDoTempoPage() {
   }, [childId, userProfile]);
 
   const timeline = useMemo(
-    () => buildTimeline(consultations, measurements, developmentAssessments),
-    [consultations, measurements, developmentAssessments]
+    () => buildTimeline(consultations, measurements, developmentAssessments, vaccinationRecords),
+    [consultations, measurements, developmentAssessments, vaccinationRecords]
   );
 
   return (
@@ -184,27 +190,55 @@ export default function LinhaDoTempoPage() {
                   );
                 }
 
+                if (entry.kind === 'developmentAssessment') {
+                  return (
+                    <Link key={`d-${entry.id}`} href={`/pacientes/${childId}/desenvolvimento`}>
+                      <Card className="transition-colors hover:bg-[var(--color-primary-light)]">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="text-xs font-medium uppercase" style={{ color: 'var(--color-text-subtle)' }}>
+                              Desenvolvimento
+                            </p>
+                            <p className="font-semibold" style={{ color: 'var(--color-text)' }}>
+                              {new Date(entry.data.assessmentDate + 'T00:00:00').toLocaleDateString('pt-BR')}
+                            </p>
+                            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                              {formatAgeInDays(entry.data.ageInDays)}
+                              {developmentSummary(entry.data) ? ` · ${developmentSummary(entry.data)}` : ''}
+                            </p>
+                          </div>
+                          {entry.data.requiresFollowUp && (
+                            <span className="shrink-0 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                              Necessita acompanhamento
+                            </span>
+                          )}
+                        </div>
+                      </Card>
+                    </Link>
+                  );
+                }
+
                 return (
-                  <Link key={`d-${entry.id}`} href={`/pacientes/${childId}/desenvolvimento`}>
+                  <Link key={`v-${entry.id}`} href={`/pacientes/${childId}/vacinacao`}>
                     <Card className="transition-colors hover:bg-[var(--color-primary-light)]">
                       <div className="flex items-center justify-between gap-4">
                         <div>
                           <p className="text-xs font-medium uppercase" style={{ color: 'var(--color-text-subtle)' }}>
-                            Desenvolvimento
+                            Vacinação
                           </p>
                           <p className="font-semibold" style={{ color: 'var(--color-text)' }}>
-                            {new Date(entry.data.assessmentDate + 'T00:00:00').toLocaleDateString('pt-BR')}
+                            {new Date(entry.data.recordDate + 'T00:00:00').toLocaleDateString('pt-BR')}
                           </p>
                           <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
                             {formatAgeInDays(entry.data.ageInDays)}
-                            {developmentSummary(entry.data) ? ` · ${developmentSummary(entry.data)}` : ''}
+                            {entry.data.vaccineName ? ` · ${entry.data.vaccineName}` : ''}
                           </p>
                         </div>
-                        {entry.data.requiresFollowUp && (
-                          <span className="shrink-0 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-200">
-                            Necessita acompanhamento
-                          </span>
-                        )}
+                        <span
+                          className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ${vaccinationStatusBadgeClasses[entry.data.status]}`}
+                        >
+                          {vaccinationStatusLabels[entry.data.status]}
+                        </span>
                       </div>
                     </Card>
                   </Link>

@@ -7,3 +7,6 @@ export * from './child';
 export * from './consultation';
 export * from './growth';
 export * from './development';
+export * from './feeding';
+export * from './sleep';
+export * from './vaccination';

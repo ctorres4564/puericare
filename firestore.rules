@@ -151,6 +151,45 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    /* ── feedingRecords/{recordId} ── Sprint 6 ── */
+    match /feedingRecords/{recordId} {
+      allow read: if isSignedIn() && (
+        resource.data.professionalId == request.auth.uid || isAdmin()
+      );
+      allow create: if isProfessional()
+        && request.resource.data.professionalId == request.auth.uid
+        && childOf(request.resource.data.childId).professionalId == request.auth.uid
+        && childOf(request.resource.data.childId).active == true;
+      // Imutável: sem "allow update". Hard delete só ADMIN.
+      allow delete: if isAdmin();
+    }
+
+    /* ── sleepRecords/{recordId} ── Sprint 6 ── */
+    match /sleepRecords/{recordId} {
+      allow read: if isSignedIn() && (
+        resource.data.professionalId == request.auth.uid || isAdmin()
+      );
+      allow create: if isProfessional()
+        && request.resource.data.professionalId == request.auth.uid
+        && childOf(request.resource.data.childId).professionalId == request.auth.uid
+        && childOf(request.resource.data.childId).active == true;
+      // Imutável: sem "allow update". Hard delete só ADMIN.
+      allow delete: if isAdmin();
+    }
+
+    /* ── vaccinationRecords/{recordId} ── Sprint 6 ── */
+    match /vaccinationRecords/{recordId} {
+      allow read: if isSignedIn() && (
+        resource.data.professionalId == request.auth.uid || isAdmin()
+      );
+      allow create: if isProfessional()
+        && request.resource.data.professionalId == request.auth.uid
+        && childOf(request.resource.data.childId).professionalId == request.auth.uid
+        && childOf(request.resource.data.childId).active == true;
+      // Imutável: sem "allow update". Hard delete só ADMIN.
+      allow delete: if isAdmin();
+    }
+
     // Nega tudo que não tiver regra explícita acima (fecha o "modo de teste").
     match /{document=**} {
       allow read, write: if false;

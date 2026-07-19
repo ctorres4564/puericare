@@ -84,6 +84,177 @@ function growthMeasurementDoc(overrides: Partial<Record<string, unknown>> = {}) 
   };
 }
 
+function feedingRecordDoc(overrides: Partial<Record<string, unknown>> = {}) {
+  const now = new Date().toISOString();
+  return {
+    childId: 'child-1',
+    professionalId: 'pro-a',
+    recordDate: '2025-06-01',
+    ageInDays: 150,
+    feedingHistory: 'Aleitamento materno exclusivo',
+    requiresFollowUp: false,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  };
+}
+
+function sleepRecordDoc(overrides: Partial<Record<string, unknown>> = {}) {
+  const now = new Date().toISOString();
+  return {
+    childId: 'child-1',
+    professionalId: 'pro-a',
+    recordDate: '2025-06-01',
+    ageInDays: 150,
+    bedtime: '20:30',
+    requiresFollowUp: false,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  };
+}
+
+function vaccinationRecordDoc(overrides: Partial<Record<string, unknown>> = {}) {
+  const now = new Date().toISOString();
+  return {
+    childId: 'child-1',
+    professionalId: 'pro-a',
+    recordDate: '2025-06-01',
+    ageInDays: 150,
+    status: 'em_dia',
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  };
+}
+
+/**
+ * Sprint 6: feedingRecords, sleepRecords e vaccinationRecords seguem
+ * exatamente a mesma política de growthMeasurements/developmentAssessments
+ * (Sprints 4/5) — gera a bateria padrão de testes uma vez por coleção, sem
+ * duplicar o bloco inteiro três vezes.
+ */
+function testImmutableChildRecordRules(
+  collectionName: string,
+  makeDoc: (overrides?: Record<string, unknown>) => Record<string, unknown>,
+  updatePatch: Record<string, unknown>
+) {
+  describe(`firestore.rules — ${collectionName}/{id} (Sprint 6)`, () => {
+    test('profissional cria registro para seu próprio paciente ativo', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), 'users', 'pro-a'), userDoc({ uid: 'pro-a', role: 'PROFESSIONAL' }));
+        await setDoc(doc(ctx.firestore(), 'children', 'child-1'), childDoc({ professionalId: 'pro-a', active: true }));
+      });
+      const db = testEnv.authenticatedContext('pro-a').firestore();
+      const ref = doc(collection(db, collectionName));
+      await assertSucceeds(setDoc(ref, makeDoc({ professionalId: 'pro-a', childId: 'child-1' })));
+    });
+
+    test('profissional NÃO cria registro com professionalId de outro', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), 'users', 'pro-a'), userDoc({ uid: 'pro-a', role: 'PROFESSIONAL' }));
+        await setDoc(doc(ctx.firestore(), 'children', 'child-1'), childDoc({ professionalId: 'pro-a', active: true }));
+      });
+      const db = testEnv.authenticatedContext('pro-a').firestore();
+      const ref = doc(collection(db, collectionName));
+      await assertFails(setDoc(ref, makeDoc({ professionalId: 'pro-b', childId: 'child-1' })));
+    });
+
+    test('profissional NÃO cria registro para paciente de outro profissional', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), 'users', 'pro-a'), userDoc({ uid: 'pro-a', role: 'PROFESSIONAL' }));
+        await setDoc(doc(ctx.firestore(), 'children', 'child-1'), childDoc({ professionalId: 'pro-b', active: true }));
+      });
+      const db = testEnv.authenticatedContext('pro-a').firestore();
+      const ref = doc(collection(db, collectionName));
+      await assertFails(setDoc(ref, makeDoc({ professionalId: 'pro-a', childId: 'child-1' })));
+    });
+
+    test('profissional NÃO cria registro para paciente desativado (soft delete)', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), 'users', 'pro-a'), userDoc({ uid: 'pro-a', role: 'PROFESSIONAL' }));
+        await setDoc(doc(ctx.firestore(), 'children', 'child-1'), childDoc({ professionalId: 'pro-a', active: false }));
+      });
+      const db = testEnv.authenticatedContext('pro-a').firestore();
+      const ref = doc(collection(db, collectionName));
+      await assertFails(setDoc(ref, makeDoc({ professionalId: 'pro-a', childId: 'child-1' })));
+    });
+
+    test('CAREGIVER não pode criar registro', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), 'users', 'cg-a'), userDoc({ uid: 'cg-a', role: 'CAREGIVER' }));
+        await setDoc(doc(ctx.firestore(), 'children', 'child-1'), childDoc({ professionalId: 'cg-a', active: true }));
+      });
+      const db = testEnv.authenticatedContext('cg-a').firestore();
+      const ref = doc(collection(db, collectionName));
+      await assertFails(setDoc(ref, makeDoc({ professionalId: 'cg-a', childId: 'child-1' })));
+    });
+
+    test('profissional dono lê seu registro', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), collectionName, 'rec-1'), makeDoc({ professionalId: 'pro-a' }));
+      });
+      const db = testEnv.authenticatedContext('pro-a').firestore();
+      await assertSucceeds(getDoc(doc(db, collectionName, 'rec-1')));
+    });
+
+    test('profissional NÃO lê registro de outro profissional (isolamento)', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), collectionName, 'rec-1'), makeDoc({ professionalId: 'pro-a' }));
+      });
+      const db = testEnv.authenticatedContext('pro-b').firestore();
+      await assertFails(getDoc(doc(db, collectionName, 'rec-1')));
+    });
+
+    test('ADMIN lê qualquer registro', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), collectionName, 'rec-1'), makeDoc({ professionalId: 'pro-a' }));
+        await setDoc(doc(ctx.firestore(), 'users', 'admin-a'), userDoc({ uid: 'admin-a', role: 'ADMIN' }));
+      });
+      const db = testEnv.authenticatedContext('admin-a').firestore();
+      await assertSucceeds(getDoc(doc(db, collectionName, 'rec-1')));
+    });
+
+    test('profissional NÃO pode editar (atualizar) um registro — imutável', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), collectionName, 'rec-1'), makeDoc({ professionalId: 'pro-a' }));
+      });
+      const db = testEnv.authenticatedContext('pro-a').firestore();
+      await assertFails(updateDoc(doc(db, collectionName, 'rec-1'), updatePatch));
+    });
+
+    test('nem ADMIN edita (atualizar) um registro — sem allow update na regra', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), collectionName, 'rec-1'), makeDoc({ professionalId: 'pro-a' }));
+        await setDoc(doc(ctx.firestore(), 'users', 'admin-a'), userDoc({ uid: 'admin-a', role: 'ADMIN' }));
+      });
+      const db = testEnv.authenticatedContext('admin-a').firestore();
+      await assertFails(updateDoc(doc(db, collectionName, 'rec-1'), updatePatch));
+    });
+
+    test('profissional NÃO pode excluir (hard delete) — só ADMIN', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), collectionName, 'rec-1'), makeDoc({ professionalId: 'pro-a' }));
+      });
+      const db = testEnv.authenticatedContext('pro-a').firestore();
+      await assertFails(deleteDoc(doc(db, collectionName, 'rec-1')));
+    });
+
+    test('ADMIN pode excluir (hard delete) um registro', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), collectionName, 'rec-1'), makeDoc({ professionalId: 'pro-a' }));
+        await setDoc(doc(ctx.firestore(), 'users', 'admin-a'), userDoc({ uid: 'admin-a', role: 'ADMIN' }));
+      });
+      const db = testEnv.authenticatedContext('admin-a').firestore();
+      await assertSucceeds(deleteDoc(doc(db, collectionName, 'rec-1')));
+    });
+  });
+}
+
+testImmutableChildRecordRules('feedingRecords', feedingRecordDoc, { requiresFollowUp: true });
+testImmutableChildRecordRules('sleepRecords', sleepRecordDoc, { requiresFollowUp: true });
+testImmutableChildRecordRules('vaccinationRecords', vaccinationRecordDoc, { status: 'atrasada' });
+
 function developmentAssessmentDoc(overrides: Partial<Record<string, unknown>> = {}) {
   const now = new Date().toISOString();
   return {

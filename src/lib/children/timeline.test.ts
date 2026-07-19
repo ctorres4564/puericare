@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { buildTimeline } from './timeline';
-import type { Consultation, GrowthMeasurement, DevelopmentAssessment } from '@/lib/types';
+import type { Consultation, GrowthMeasurement, DevelopmentAssessment, VaccinationRecord } from '@/lib/types';
 
 function makeConsultation(overrides: Partial<Consultation>): Consultation {
   return {
@@ -44,6 +44,20 @@ function makeDevelopmentAssessment(overrides: Partial<DevelopmentAssessment>): D
   };
 }
 
+function makeVaccinationRecord(overrides: Partial<VaccinationRecord>): VaccinationRecord {
+  return {
+    id: 'v1',
+    childId: 'child-1',
+    professionalId: 'pro-1',
+    recordDate: '2025-01-01',
+    ageInDays: 30,
+    status: 'em_dia',
+    createdAt: '2025-01-01T00:00:00.000Z',
+    updatedAt: '2025-01-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
 describe('buildTimeline', () => {
   test('mescla consultas e medições em ordem cronológica (mais recente primeiro)', () => {
     const consultations = [makeConsultation({ id: 'c1', consultationDate: '2025-01-01' })];
@@ -78,29 +92,32 @@ describe('buildTimeline', () => {
     const timeline = buildTimeline(
       [makeConsultation({ id: 'c1' })],
       [makeMeasurement({ id: 'm1' })],
-      [makeDevelopmentAssessment({ id: 'd1' })]
+      [makeDevelopmentAssessment({ id: 'd1' })],
+      [makeVaccinationRecord({ id: 'v1' })]
     );
     const kinds = Object.fromEntries(timeline.map((e) => [e.id, e.kind]));
     expect(kinds.c1).toBe('consultation');
     expect(kinds.m1).toBe('growthMeasurement');
     expect(kinds.d1).toBe('developmentAssessment');
+    expect(kinds.v1).toBe('vaccinationRecord');
   });
 
-  test('mescla os três tipos de registro em ordem cronológica', () => {
+  test('mescla os quatro tipos de registro em ordem cronológica', () => {
     const timeline = buildTimeline(
       [makeConsultation({ id: 'c1', consultationDate: '2025-02-01' })],
-      [makeMeasurement({ id: 'm1', measurementDate: '2025-03-01' })],
-      [makeDevelopmentAssessment({ id: 'd1', assessmentDate: '2025-01-01' })]
+      [makeMeasurement({ id: 'm1', measurementDate: '2025-04-01' })],
+      [makeDevelopmentAssessment({ id: 'd1', assessmentDate: '2025-01-01' })],
+      [makeVaccinationRecord({ id: 'v1', recordDate: '2025-03-01' })]
     );
-    expect(timeline.map((e) => e.id)).toEqual(['m1', 'c1', 'd1']);
+    expect(timeline.map((e) => e.id)).toEqual(['m1', 'v1', 'c1', 'd1']);
   });
 
-  test('developmentAssessments é opcional (compatibilidade com chamadas antigas)', () => {
+  test('developmentAssessments e vaccinationRecords são opcionais (compatibilidade com chamadas antigas)', () => {
     const timeline = buildTimeline([makeConsultation({ id: 'c1' })], [makeMeasurement({ id: 'm1' })]);
     expect(timeline).toHaveLength(2);
   });
 
   test('listas vazias retornam linha do tempo vazia', () => {
-    expect(buildTimeline([], [], [])).toEqual([]);
+    expect(buildTimeline([], [], [], [])).toEqual([]);
   });
 });

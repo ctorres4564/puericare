@@ -117,6 +117,15 @@ export default function PacientesPage() {
                     <Button variant="secondary" size="sm" href={`/pacientes/${child.id}/desenvolvimento`}>
                       Desenvolvimento
                     </Button>
+                    <Button variant="secondary" size="sm" href={`/pacientes/${child.id}/alimentacao`}>
+                      Alimentação
+                    </Button>
+                    <Button variant="secondary" size="sm" href={`/pacientes/${child.id}/sono`}>
+                      Sono
+                    </Button>
+                    <Button variant="secondary" size="sm" href={`/pacientes/${child.id}/vacinacao`}>
+                      Vacinação
+                    </Button>
                     {child.active && (
                       <Button size="sm" href={`/pacientes/${child.id}/consultas/nova`}>
                         Iniciar consulta
