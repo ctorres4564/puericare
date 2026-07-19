@@ -357,4 +357,32 @@ tempo (por paciente e global). Detalhes completos em
   alheios (`watch()` do react-hook-form).
 - Regras de `consultations` publicadas no projeto real (`puericultura-62969`),
   idênticas ao arquivo versionado.
-- `next start` local acusa incompatibilidade com `output: "standalone"` do `next.config.mjs` (pré-existente, não introduzido pelo Sprint 2); não impediu a verificação, mas deploy via `next start` direto não é o modo correto para essa configuração.
+
+---
+
+# ADENDO — Sprint 4: Antropometria e Crescimento (2026-07-19)
+
+**Escopo**: coleção `growthMeasurements` (peso, altura/comprimento, PC, IMC
+calculado), regras de segurança, gráfico de evolução e integração com a
+linha do tempo. Detalhes completos, incluindo fórmulas e referências, em
+`documentacao/sprint-4-crescimento.md`. Não reabre Sprint 1–3.
+
+- **Princípio clínico**: nenhuma fórmula, percentil, escore-Z ou curva de
+  crescimento foi inventado. O PRD exclui explicitamente "curvas completas
+  da OMS" deste MVP (seções 7, 18 e 19); sem as tabelas oficiais OMS/WHO no
+  projeto, percentil/escore-Z/classificação nutricional ficam registrados
+  como pendência, não implementados. Único cálculo clínico: IMC bruto
+  (peso/altura², fórmula universal, sem classificação).
+- **Testes automatizados no projeto (total atualizado)**: 151 — 97
+  unitários + 54 de regras (Firestore Emulator, nunca produção). Todos
+  verdes; sem `skip`/`todo`; zero regressão nos 106 testes anteriores.
+- **Homologação funcional** contra o projeto Firebase real, dados
+  descartáveis removidos ao final: 12/12 — registro de medição com IMC
+  correto, associação ao paciente, histórico cronológico, persistência após
+  recarregar, **imutabilidade confirmada** (update sempre negado), isolamento
+  entre profissionais, bloqueio de nova medição com paciente inativo
+  (histórico preservado).
+- **Build/lint/typecheck**: sem erros; mesmos 2 avisos pré-existentes.
+- Regras de `growthMeasurements` publicadas no projeto real, idênticas ao
+  arquivo versionado.
+- `next start` local acusava incompatibilidade com `output: "standalone"` do `next.config.mjs` (pré-existente, não introduzido pelo Sprint 2). **[Resolvido na etapa de estabilização técnica seguinte: `output: "standalone"` removido — não era necessário para o alvo de deploy (Vercel) e quebrava `next start` local. Ver commit `db8e476`.]**

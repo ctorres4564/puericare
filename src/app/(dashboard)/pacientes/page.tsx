@@ -109,7 +109,10 @@ export default function PacientesPage() {
                       Editar
                     </Button>
                     <Button variant="secondary" size="sm" href={`/pacientes/${child.id}/consultas`}>
-                      Consultas
+                      Linha do tempo
+                    </Button>
+                    <Button variant="secondary" size="sm" href={`/pacientes/${child.id}/crescimento`}>
+                      Crescimento
                     </Button>
                     {child.active && (
                       <Button size="sm" href={`/pacientes/${child.id}/consultas/nova`}>

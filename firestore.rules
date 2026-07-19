@@ -115,6 +115,24 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    /* ── growthMeasurements/{measurementId} ── Sprint 4 ── */
+    match /growthMeasurements/{measurementId} {
+      // Mesma política de leitura de consultations: sem portal do responsável nesta fase.
+      allow read: if isSignedIn() && (
+        resource.data.professionalId == request.auth.uid || isAdmin()
+      );
+
+      // Mesma condição de consultations: PROFESSIONAL, dono da criança, criança ativa.
+      allow create: if isProfessional()
+        && request.resource.data.professionalId == request.auth.uid
+        && childOf(request.resource.data.childId).professionalId == request.auth.uid
+        && childOf(request.resource.data.childId).active == true;
+
+      // Medições são imutáveis: nunca sobrescrever um registro já criado.
+      // Sem "allow update" — nem o dono pode editar. Hard delete só ADMIN.
+      allow delete: if isAdmin();
+    }
+
     // Nega tudo que não tiver regra explícita acima (fecha o "modo de teste").
     match /{document=**} {
       allow read, write: if false;

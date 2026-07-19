@@ -68,6 +68,22 @@ function consultationDoc(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
+function growthMeasurementDoc(overrides: Partial<Record<string, unknown>> = {}) {
+  const now = new Date().toISOString();
+  return {
+    childId: 'child-1',
+    professionalId: 'pro-a',
+    measurementDate: '2025-06-01',
+    ageInDays: 150,
+    weightKg: 10,
+    heightCm: 75,
+    bmi: 17.8,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  };
+}
+
 beforeAll(async () => {
   testEnv = await initializeTestEnvironment({
     projectId: PROJECT_ID,
@@ -431,6 +447,117 @@ describe('firestore.rules — consultations/{consultationId} (Sprint 3)', () => 
     });
     const db = testEnv.authenticatedContext('admin-a').firestore();
     await assertSucceeds(deleteDoc(doc(db, 'consultations', 'cons-1')));
+  });
+});
+
+describe('firestore.rules — growthMeasurements/{measurementId} (Sprint 4)', () => {
+  test('profissional cria medição para seu próprio paciente ativo', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'pro-a'), userDoc({ uid: 'pro-a', role: 'PROFESSIONAL' }));
+      await setDoc(doc(ctx.firestore(), 'children', 'child-1'), childDoc({ professionalId: 'pro-a', active: true }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    const ref = doc(collection(db, 'growthMeasurements'));
+    await assertSucceeds(setDoc(ref, growthMeasurementDoc({ professionalId: 'pro-a', childId: 'child-1' })));
+  });
+
+  test('profissional NÃO cria medição com professionalId de outro', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'pro-a'), userDoc({ uid: 'pro-a', role: 'PROFESSIONAL' }));
+      await setDoc(doc(ctx.firestore(), 'children', 'child-1'), childDoc({ professionalId: 'pro-a', active: true }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    const ref = doc(collection(db, 'growthMeasurements'));
+    await assertFails(setDoc(ref, growthMeasurementDoc({ professionalId: 'pro-b', childId: 'child-1' })));
+  });
+
+  test('profissional NÃO cria medição para paciente de outro profissional', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'pro-a'), userDoc({ uid: 'pro-a', role: 'PROFESSIONAL' }));
+      await setDoc(doc(ctx.firestore(), 'children', 'child-1'), childDoc({ professionalId: 'pro-b', active: true }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    const ref = doc(collection(db, 'growthMeasurements'));
+    await assertFails(setDoc(ref, growthMeasurementDoc({ professionalId: 'pro-a', childId: 'child-1' })));
+  });
+
+  test('profissional NÃO cria medição para paciente desativado (soft delete)', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'pro-a'), userDoc({ uid: 'pro-a', role: 'PROFESSIONAL' }));
+      await setDoc(doc(ctx.firestore(), 'children', 'child-1'), childDoc({ professionalId: 'pro-a', active: false }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    const ref = doc(collection(db, 'growthMeasurements'));
+    await assertFails(setDoc(ref, growthMeasurementDoc({ professionalId: 'pro-a', childId: 'child-1' })));
+  });
+
+  test('CAREGIVER não pode criar medição', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'cg-a'), userDoc({ uid: 'cg-a', role: 'CAREGIVER' }));
+      await setDoc(doc(ctx.firestore(), 'children', 'child-1'), childDoc({ professionalId: 'cg-a', active: true }));
+    });
+    const db = testEnv.authenticatedContext('cg-a').firestore();
+    const ref = doc(collection(db, 'growthMeasurements'));
+    await assertFails(setDoc(ref, growthMeasurementDoc({ professionalId: 'cg-a', childId: 'child-1' })));
+  });
+
+  test('profissional dono lê sua medição', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'growthMeasurements', 'meas-1'), growthMeasurementDoc({ professionalId: 'pro-a' }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    await assertSucceeds(getDoc(doc(db, 'growthMeasurements', 'meas-1')));
+  });
+
+  test('profissional NÃO lê medição de outro profissional (isolamento)', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'growthMeasurements', 'meas-1'), growthMeasurementDoc({ professionalId: 'pro-a' }));
+    });
+    const db = testEnv.authenticatedContext('pro-b').firestore();
+    await assertFails(getDoc(doc(db, 'growthMeasurements', 'meas-1')));
+  });
+
+  test('ADMIN lê qualquer medição', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'growthMeasurements', 'meas-1'), growthMeasurementDoc({ professionalId: 'pro-a' }));
+      await setDoc(doc(ctx.firestore(), 'users', 'admin-a'), userDoc({ uid: 'admin-a', role: 'ADMIN' }));
+    });
+    const db = testEnv.authenticatedContext('admin-a').firestore();
+    await assertSucceeds(getDoc(doc(db, 'growthMeasurements', 'meas-1')));
+  });
+
+  test('profissional NÃO pode editar (atualizar) uma medição — imutável', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'growthMeasurements', 'meas-1'), growthMeasurementDoc({ professionalId: 'pro-a' }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    await assertFails(updateDoc(doc(db, 'growthMeasurements', 'meas-1'), { weightKg: 999 }));
+  });
+
+  test('nem ADMIN edita (atualizar) uma medição — sem allow update na regra', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'growthMeasurements', 'meas-1'), growthMeasurementDoc({ professionalId: 'pro-a' }));
+      await setDoc(doc(ctx.firestore(), 'users', 'admin-a'), userDoc({ uid: 'admin-a', role: 'ADMIN' }));
+    });
+    const db = testEnv.authenticatedContext('admin-a').firestore();
+    await assertFails(updateDoc(doc(db, 'growthMeasurements', 'meas-1'), { weightKg: 999 }));
+  });
+
+  test('profissional NÃO pode excluir (hard delete) — só ADMIN', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'growthMeasurements', 'meas-1'), growthMeasurementDoc({ professionalId: 'pro-a' }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    await assertFails(deleteDoc(doc(db, 'growthMeasurements', 'meas-1')));
+  });
+
+  test('ADMIN pode excluir (hard delete) uma medição', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'growthMeasurements', 'meas-1'), growthMeasurementDoc({ professionalId: 'pro-a' }));
+      await setDoc(doc(ctx.firestore(), 'users', 'admin-a'), userDoc({ uid: 'admin-a', role: 'ADMIN' }));
+    });
+    const db = testEnv.authenticatedContext('admin-a').firestore();
+    await assertSucceeds(deleteDoc(doc(db, 'growthMeasurements', 'meas-1')));
   });
 });
 

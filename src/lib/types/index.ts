@@ -5,3 +5,4 @@
 export * from './user';
 export * from './child';
 export * from './consultation';
+export * from './growth';
