@@ -133,6 +133,24 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    /* ── developmentAssessments/{assessmentId} ── Sprint 5 ── */
+    match /developmentAssessments/{assessmentId} {
+      // Mesma política de leitura de consultations/growthMeasurements.
+      allow read: if isSignedIn() && (
+        resource.data.professionalId == request.auth.uid || isAdmin()
+      );
+
+      // Mesma condição de growthMeasurements: PROFESSIONAL, dono da criança, criança ativa.
+      allow create: if isProfessional()
+        && request.resource.data.professionalId == request.auth.uid
+        && childOf(request.resource.data.childId).professionalId == request.auth.uid
+        && childOf(request.resource.data.childId).active == true;
+
+      // Registros são imutáveis: nunca sobrescrever uma avaliação já criada.
+      // Sem "allow update" — nem o dono pode editar. Hard delete só ADMIN.
+      allow delete: if isAdmin();
+    }
+
     // Nega tudo que não tiver regra explícita acima (fecha o "modo de teste").
     match /{document=**} {
       allow read, write: if false;

@@ -84,6 +84,21 @@ function growthMeasurementDoc(overrides: Partial<Record<string, unknown>> = {}) 
   };
 }
 
+function developmentAssessmentDoc(overrides: Partial<Record<string, unknown>> = {}) {
+  const now = new Date().toISOString();
+  return {
+    childId: 'child-1',
+    professionalId: 'pro-a',
+    assessmentDate: '2025-06-01',
+    ageInDays: 365,
+    milestones: [{ domain: 'motor_grosso', description: 'Anda sem apoio', status: 'ACHIEVED' }],
+    requiresFollowUp: false,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  };
+}
+
 beforeAll(async () => {
   testEnv = await initializeTestEnvironment({
     projectId: PROJECT_ID,
@@ -558,6 +573,117 @@ describe('firestore.rules — growthMeasurements/{measurementId} (Sprint 4)', ()
     });
     const db = testEnv.authenticatedContext('admin-a').firestore();
     await assertSucceeds(deleteDoc(doc(db, 'growthMeasurements', 'meas-1')));
+  });
+});
+
+describe('firestore.rules — developmentAssessments/{assessmentId} (Sprint 5)', () => {
+  test('profissional cria registro para seu próprio paciente ativo', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'pro-a'), userDoc({ uid: 'pro-a', role: 'PROFESSIONAL' }));
+      await setDoc(doc(ctx.firestore(), 'children', 'child-1'), childDoc({ professionalId: 'pro-a', active: true }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    const ref = doc(collection(db, 'developmentAssessments'));
+    await assertSucceeds(setDoc(ref, developmentAssessmentDoc({ professionalId: 'pro-a', childId: 'child-1' })));
+  });
+
+  test('profissional NÃO cria registro com professionalId de outro', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'pro-a'), userDoc({ uid: 'pro-a', role: 'PROFESSIONAL' }));
+      await setDoc(doc(ctx.firestore(), 'children', 'child-1'), childDoc({ professionalId: 'pro-a', active: true }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    const ref = doc(collection(db, 'developmentAssessments'));
+    await assertFails(setDoc(ref, developmentAssessmentDoc({ professionalId: 'pro-b', childId: 'child-1' })));
+  });
+
+  test('profissional NÃO cria registro para paciente de outro profissional', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'pro-a'), userDoc({ uid: 'pro-a', role: 'PROFESSIONAL' }));
+      await setDoc(doc(ctx.firestore(), 'children', 'child-1'), childDoc({ professionalId: 'pro-b', active: true }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    const ref = doc(collection(db, 'developmentAssessments'));
+    await assertFails(setDoc(ref, developmentAssessmentDoc({ professionalId: 'pro-a', childId: 'child-1' })));
+  });
+
+  test('profissional NÃO cria registro para paciente desativado (soft delete)', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'pro-a'), userDoc({ uid: 'pro-a', role: 'PROFESSIONAL' }));
+      await setDoc(doc(ctx.firestore(), 'children', 'child-1'), childDoc({ professionalId: 'pro-a', active: false }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    const ref = doc(collection(db, 'developmentAssessments'));
+    await assertFails(setDoc(ref, developmentAssessmentDoc({ professionalId: 'pro-a', childId: 'child-1' })));
+  });
+
+  test('CAREGIVER não pode criar registro', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'cg-a'), userDoc({ uid: 'cg-a', role: 'CAREGIVER' }));
+      await setDoc(doc(ctx.firestore(), 'children', 'child-1'), childDoc({ professionalId: 'cg-a', active: true }));
+    });
+    const db = testEnv.authenticatedContext('cg-a').firestore();
+    const ref = doc(collection(db, 'developmentAssessments'));
+    await assertFails(setDoc(ref, developmentAssessmentDoc({ professionalId: 'cg-a', childId: 'child-1' })));
+  });
+
+  test('profissional dono lê seu registro', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'developmentAssessments', 'dev-1'), developmentAssessmentDoc({ professionalId: 'pro-a' }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    await assertSucceeds(getDoc(doc(db, 'developmentAssessments', 'dev-1')));
+  });
+
+  test('profissional NÃO lê registro de outro profissional (isolamento)', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'developmentAssessments', 'dev-1'), developmentAssessmentDoc({ professionalId: 'pro-a' }));
+    });
+    const db = testEnv.authenticatedContext('pro-b').firestore();
+    await assertFails(getDoc(doc(db, 'developmentAssessments', 'dev-1')));
+  });
+
+  test('ADMIN lê qualquer registro', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'developmentAssessments', 'dev-1'), developmentAssessmentDoc({ professionalId: 'pro-a' }));
+      await setDoc(doc(ctx.firestore(), 'users', 'admin-a'), userDoc({ uid: 'admin-a', role: 'ADMIN' }));
+    });
+    const db = testEnv.authenticatedContext('admin-a').firestore();
+    await assertSucceeds(getDoc(doc(db, 'developmentAssessments', 'dev-1')));
+  });
+
+  test('profissional NÃO pode editar (atualizar) um registro — imutável', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'developmentAssessments', 'dev-1'), developmentAssessmentDoc({ professionalId: 'pro-a' }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    await assertFails(updateDoc(doc(db, 'developmentAssessments', 'dev-1'), { requiresFollowUp: true }));
+  });
+
+  test('nem ADMIN edita (atualizar) um registro — sem allow update na regra', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'developmentAssessments', 'dev-1'), developmentAssessmentDoc({ professionalId: 'pro-a' }));
+      await setDoc(doc(ctx.firestore(), 'users', 'admin-a'), userDoc({ uid: 'admin-a', role: 'ADMIN' }));
+    });
+    const db = testEnv.authenticatedContext('admin-a').firestore();
+    await assertFails(updateDoc(doc(db, 'developmentAssessments', 'dev-1'), { requiresFollowUp: true }));
+  });
+
+  test('profissional NÃO pode excluir (hard delete) — só ADMIN', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'developmentAssessments', 'dev-1'), developmentAssessmentDoc({ professionalId: 'pro-a' }));
+    });
+    const db = testEnv.authenticatedContext('pro-a').firestore();
+    await assertFails(deleteDoc(doc(db, 'developmentAssessments', 'dev-1')));
+  });
+
+  test('ADMIN pode excluir (hard delete) um registro', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'developmentAssessments', 'dev-1'), developmentAssessmentDoc({ professionalId: 'pro-a' }));
+      await setDoc(doc(ctx.firestore(), 'users', 'admin-a'), userDoc({ uid: 'admin-a', role: 'ADMIN' }));
+    });
+    const db = testEnv.authenticatedContext('admin-a').firestore();
+    await assertSucceeds(deleteDoc(doc(db, 'developmentAssessments', 'dev-1')));
   });
 });
 

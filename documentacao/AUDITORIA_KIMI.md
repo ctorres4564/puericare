@@ -385,4 +385,42 @@ linha do tempo. Detalhes completos, incluindo fórmulas e referências, em
 - **Build/lint/typecheck**: sem erros; mesmos 2 avisos pré-existentes.
 - Regras de `growthMeasurements` publicadas no projeto real, idênticas ao
   arquivo versionado.
+
+---
+
+# ADENDO — Sprint 5: Desenvolvimento/Neurodesenvolvimento (2026-07-19)
+
+**Escopo**: coleção `developmentAssessments` (registro longitudinal por
+domínio, 4 estados de marco, observação livre, flag manual de
+acompanhamento), regras de segurança e integração com a linha do tempo
+(3º tipo de entrada). Detalhes completos, incluindo a classificação
+registro/vigilância/triagem/diagnóstico e a auditoria dos requisitos, em
+`documentacao/sprint-5-desenvolvimento.md`. Não reabre Sprint 1–4.
+
+- **Princípio clínico**: o sistema implementa só o nível 1 (vigilância).
+  Nenhum instrumento de triagem estruturado (Denver II/ASQ-3/M-CHAT-R) foi
+  implementado — não previsto no PRD e envolveria licenciamento não
+  verificável por esta sessão. Nenhuma avaliação diagnóstica é simulada; o
+  sistema nunca emite frases como "atraso do desenvolvimento" ou "suspeita
+  de autismo". O único "alerta" (`requiresFollowUp`) é sempre definido
+  manualmente pelo profissional, nunca inferido automaticamente.
+- **Banco de marcos por idade**: não implementado por ausência de fonte
+  oficial citável (o exemplo do PRD é rotulado "Exemplo", sem citação,
+  versão ou população) — registrado como pendência explícita, não
+  aproximado.
+- **Idade corrigida por prematuridade**: verificado nos documentos do
+  projeto — não é requisito; não implementada por esse motivo (não por
+  falta de fonte).
+- **Testes automatizados no projeto (total atualizado)**: 184 — 118
+  unitários + 66 de regras (Firestore Emulator, nunca produção). Todos
+  verdes; zero regressão nos 151 testes anteriores.
+- **Homologação funcional** contra o projeto Firebase real, dados
+  descartáveis removidos ao final: 12/12 — criação com associação e idade
+  corretas, marcos/flag preservados exatamente como inseridos pelo
+  profissional, histórico longitudinal, persistência após recarregar,
+  imutabilidade confirmada, isolamento entre profissionais, bloqueio de
+  novo registro com paciente inativo (histórico preservado).
+- **Build/lint/typecheck**: sem erros; mesmos 2 avisos pré-existentes.
+- Regras de `developmentAssessments` publicadas no projeto real, idênticas
+  ao arquivo versionado.
 - `next start` local acusava incompatibilidade com `output: "standalone"` do `next.config.mjs` (pré-existente, não introduzido pelo Sprint 2). **[Resolvido na etapa de estabilização técnica seguinte: `output: "standalone"` removido — não era necessário para o alvo de deploy (Vercel) e quebrava `next start` local. Ver commit `db8e476`.]**
