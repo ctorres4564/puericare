@@ -11,7 +11,7 @@ import { Header }  from '@/components/layout/Header';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, userProfile, loading, logout } = useAuth();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -44,6 +44,49 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   // Não renderiza nada enquanto redireciona para login
   if (!user) return null;
+
+  // Perfil não encontrado no Firestore — mostra mensagem informativa
+  if (!userProfile) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-6">
+        <div
+          className="w-full max-w-md rounded-xl border p-8 text-center"
+          style={{
+            background: 'var(--color-bg-card)',
+            borderColor: 'var(--color-border)',
+            boxShadow: 'var(--shadow-md)',
+          }}
+        >
+          <div className="mb-4 text-4xl">⚠️</div>
+          <h2 className="mb-2 text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
+            Perfil não encontrado
+          </h2>
+          <p className="mb-4 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+            Sua conta de autenticação existe, mas o perfil correspondente não foi encontrado no
+            banco de dados. Isso pode acontecer se o usuário foi cadastrado diretamente no Firebase
+            Authentication sem criar o documento na coleção <strong>users</strong> do Firestore.
+          </p>
+          <p className="mb-6 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+            <strong>Solução:</strong> Verifique no Firebase Console se existe um documento em{' '}
+            <code className="rounded px-1 py-0.5 text-xs" style={{ background: 'var(--color-primary-light)' }}>
+              Firestore → users/{user.uid}
+            </code>{' '}
+            com os campos obrigatórios: <em>uid, email, displayName, role, active, createdAt, updatedAt</em>.
+          </p>
+          <button
+            onClick={async () => {
+              await logout();
+              router.push('/login');
+            }}
+            className="rounded-lg px-6 py-2.5 text-sm font-semibold text-white transition-colors"
+            style={{ background: 'var(--color-primary)' }}
+          >
+            Voltar para o Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--color-bg)' }}>

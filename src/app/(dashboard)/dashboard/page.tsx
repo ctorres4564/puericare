@@ -85,7 +85,8 @@ export default function DashboardPage() {
     if (!userProfile) return;
     (async () => {
       try {
-        const [allChildren, allConsultations, allDevelopment, allFeeding, allSleep, allVaccination, alertCount] = await Promise.all([
+        // Usa allSettled para que falhas individuais (ex: regras Firestore) não bloqueiem tudo
+        const results = await Promise.allSettled([
           listChildrenByProfessional(userProfile.uid),
           listConsultationsByProfessional(userProfile.uid),
           listDevelopmentAssessmentsByProfessional(userProfile.uid),
@@ -94,13 +95,35 @@ export default function DashboardPage() {
           listVaccinationRecordsByProfessional(userProfile.uid),
           countActiveAlerts(userProfile.uid),
         ]);
+
+        const getValue = <T,>(r: PromiseSettledResult<T>, fallback: T): T =>
+          r.status === 'fulfilled' ? r.value : fallback;
+
+        const allChildren     = getValue(results[0] as PromiseSettledResult<Child[]>, []);
+        const allConsultations = getValue(results[1] as PromiseSettledResult<Consultation[]>, []);
+        const allDevelopment  = getValue(results[2] as PromiseSettledResult<unknown[]>, []);
+        const allFeeding      = getValue(results[3] as PromiseSettledResult<unknown[]>, []);
+        const allSleep        = getValue(results[4] as PromiseSettledResult<unknown[]>, []);
+        const allVaccination  = getValue(results[5] as PromiseSettledResult<unknown[]>, []);
+        const alertCount      = getValue(results[6] as PromiseSettledResult<number>, 0);
+
         setChildren(allChildren);
         setConsultations(allConsultations);
-        setFollowUpCount(countRequiringFollowUp(allDevelopment, allFeeding, allSleep));
-        setLateVaccinationCount(countChildrenWithLatestVaccinationStatus(allVaccination, 'atrasada'));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setFollowUpCount(countRequiringFollowUp(allDevelopment as any, allFeeding as any, allSleep as any));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setLateVaccinationCount(countChildrenWithLatestVaccinationStatus(allVaccination as any, 'atrasada'));
         setActiveAlertCount(alertCount);
-      } catch {
-        setError('Não foi possível carregar os dados do dashboard.');
+
+        // Verifica se alguma query falhou e mostra aviso (não erro bloqueante)
+        const failedCount = results.filter((r) => r.status === 'rejected').length;
+        if (failedCount > 0) {
+          console.warn(`[Dashboard] ${failedCount} consulta(s) ao Firestore falharam. Verifique se as regras de segurança (firestore.rules) estão publicadas.`);
+          setError('Alguns dados podem estar incompletos. Verifique se as regras do Firestore foram publicadas no Firebase Console.');
+        }
+      } catch (err) {
+        console.error('[Dashboard] Erro ao carregar dados:', err);
+        setError('Não foi possível carregar os dados do dashboard. Verifique se o perfil do usuário no Firestore está configurado corretamente.');
       } finally {
         setLoading(false);
       }

@@ -51,6 +51,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
           }
         }
+
+        // Valida que o perfil tem os campos mínimos obrigatórios
+        if (profile && (!profile.role || !profile.displayName || !profile.email)) {
+          console.warn(
+            '[AuthProvider] Perfil do Firestore incompleto para UID:',
+            usr.uid,
+            '— Campos faltantes:',
+            !profile.role ? 'role' : '',
+            !profile.displayName ? 'displayName' : '',
+            !profile.email ? 'email' : '',
+          );
+        }
+
+        if (!profile) {
+          console.warn(
+            '[AuthProvider] Perfil não encontrado no Firestore para UID:',
+            usr.uid,
+            '— O usuário precisa ter um documento em /users/{uid} com os campos: uid, email, displayName, role, active, createdAt, updatedAt.',
+          );
+        }
+
         setUserProfile(profile);
       } else {
         setUserProfile(null);
