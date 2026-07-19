@@ -71,7 +71,14 @@ const consultationStatusLabels: Record<ConsultationStatus, string> = {
 };
 
 export default function DashboardPage() {
-  const { userProfile } = useAuth();
+  const { userProfile, user } = useAuth();
+
+  useEffect(() => {
+    if (user && userProfile) {
+      // eslint-disable-next-line no-console
+      console.warn('[Dashboard][DIAG] auth.uid =', user.uid, '| userProfile.uid (campo do doc) =', userProfile.uid, '| iguais?', user.uid === userProfile.uid);
+    }
+  }, [user, userProfile]);
 
   const [children, setChildren] = useState<Child[]>([]);
   const [consultations, setConsultations] = useState<Consultation[]>([]);
