@@ -133,6 +133,17 @@ export default function LoginPage() {
           Entrar
         </Button>
       </form>
+
+      <div className="mt-6 text-center text-sm" style={{ color: 'var(--color-text-muted)' }}>
+        Não tem uma conta?{' '}
+        <Link
+          href="/cadastro"
+          className="font-medium transition-colors"
+          style={{ color: 'var(--color-primary)' }}
+        >
+          Cadastre-se
+        </Link>
+      </div>
     </Card>
   );
 }

@@ -1,5 +1,6 @@
 import {
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
 } from 'firebase/auth';
@@ -12,6 +13,15 @@ import { getFirebaseAuth } from '@/lib/firebase/client';
 export const signIn = async (email: string, password: string) => {
   const auth = getFirebaseAuth();
   const credential = await signInWithEmailAndPassword(auth, email, password);
+  return credential.user;
+};
+
+/**
+ * Cria um novo usuário com e-mail e senha.
+ */
+export const signUp = async (email: string, password: string) => {
+  const auth = getFirebaseAuth();
+  const credential = await createUserWithEmailAndPassword(auth, email, password);
   return credential.user;
 };
 
