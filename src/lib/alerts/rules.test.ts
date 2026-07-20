@@ -17,9 +17,11 @@ import {
   r8SleepFollowUpRecurrent,
   r9DevelopmentDelayMultiple,
   r10SafetyAlertChokingApnea,
+  r11VaccineDoseOverdue,
   ageInDaysAt,
   type RuleInput,
 } from './rules';
+import { PNI_SCHEDULE } from '@/lib/vaccination/schedule';
 import type {
   Child,
   Consultation,
@@ -118,9 +120,13 @@ function makeSleep(date: string, requiresFollowUp: boolean): SleepRecord {
   };
 }
 
-function makeVaccination(date: string, status: 'em_dia' | 'atrasada' | 'nao_informado'): VaccinationRecord {
+function makeVaccination(
+  date: string,
+  status: 'em_dia' | 'atrasada' | 'nao_informado',
+  overrides: Partial<VaccinationRecord> = {}
+): VaccinationRecord {
   return {
-    id: `vacc-${date}`,
+    id: `vacc-${date}-${overrides.scheduleKey ?? 'status'}`,
     childId: 'child-1',
     professionalId: 'prof-1',
     recordDate: date,
@@ -128,7 +134,15 @@ function makeVaccination(date: string, status: 'em_dia' | 'atrasada' | 'nao_info
     status,
     createdAt: date + 'T00:00:00Z',
     updatedAt: date + 'T00:00:00Z',
+    ...overrides,
   };
+}
+
+/** Registros cobrindo todas as doses do calendário até `maxAgeDays` (criança "em dia") */
+function makeFullScheduleRecords(maxAgeDays: number, appliedDate = '2026-06-01'): VaccinationRecord[] {
+  return PNI_SCHEDULE.filter((d) => d.ageDays <= maxAgeDays).map((d) =>
+    makeVaccination(appliedDate, 'em_dia', { scheduleKey: d.key, vaccineName: d.vaccine })
+  );
 }
 
 function emptyInput(childOverrides: Partial<Child> = {}): RuleInput {
@@ -470,6 +484,51 @@ describe('r10SafetyAlertChokingApnea', () => {
 
 // ─── evaluateRules ────────────────────────────────────────────────────────────
 
+describe('r11VaccineDoseOverdue', () => {
+  it('detecta doses previstas sem registro', () => {
+    // Criança com 6 meses (REF 2026-07-19), nenhum registro → doses do
+    // nascimento e de 2–4 meses sem registro após a janela
+    const input = emptyInput({ birthDate: '2026-01-19' });
+    const alert = r11VaccineDoseOverdue(input);
+    expect(alert).not.toBeNull();
+    expect(alert!.ruleId).toBe('R11_VACCINE_DOSE_OVERDUE');
+    expect(alert!.description).toContain('BCG');
+  });
+
+  it('é ATTENTION (não HIGH_PRIORITY) e orienta conferir a caderneta', () => {
+    // Ausência de registro ≠ dose não aplicada — o alerta não pode soar
+    // como conclusão clínica nem como alta prioridade.
+    const input = emptyInput({ birthDate: '2026-01-19' });
+    const alert = r11VaccineDoseOverdue(input);
+    expect(alert!.category).toBe('ATTENTION');
+    expect(alert!.title).toBe('Vacinação a conferir');
+    expect(alert!.description).toContain('Não há registro');
+    expect(alert!.description).toContain('caderneta de vacinação');
+    expect(alert!.description).not.toContain('atraso');
+  });
+
+  it('retorna null quando todas as doses vencidas estão registradas', () => {
+    const input: RuleInput = {
+      ...emptyInput({ birthDate: '2026-01-19' }),
+      vaccinationRecords: makeFullScheduleRecords(180),
+    };
+    expect(r11VaccineDoseOverdue(input)).toBeNull();
+  });
+
+  it('retorna null para recém-nascido sem doses vencidas', () => {
+    const input = emptyInput({ birthDate: REF });
+    expect(r11VaccineDoseOverdue(input)).toBeNull();
+  });
+
+  it('limita a listagem a 3 exemplos na descrição', () => {
+    const input = emptyInput({ birthDate: '2025-01-19' }); // 18 meses, muitas doses sem registro
+    const alert = r11VaccineDoseOverdue(input);
+    expect(alert!.description).toContain('e mais');
+  });
+});
+
+// ─── evaluateRules ────────────────────────────────────────────────────────────
+
 describe('evaluateRules', () => {
   it('retorna array vazio para criança com tudo em dia', () => {
     const child = makeChild({ birthDate: '2025-07-19' }); // ~1 ano
@@ -481,7 +540,8 @@ describe('evaluateRules', () => {
       developmentAssessments: [makeDevelopment('2026-06-01', [])],
       feedingRecords: [makeFeeding('2026-06-01', false)],
       sleepRecords: [makeSleep('2026-06-01', false)],
-      vaccinationRecords: [makeVaccination('2026-06-01', 'em_dia')],
+      // esquema vacinal completo até 1 ano → R11 não dispara
+      vaccinationRecords: makeFullScheduleRecords(365),
     };
     expect(evaluateRules(input)).toHaveLength(0);
   });

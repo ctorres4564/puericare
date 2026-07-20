@@ -24,6 +24,7 @@ import type {
   AlertCategory,
   AlertRuleId,
 } from '@/lib/types';
+import { buildVaccinationSchedule } from '@/lib/vaccination/schedule';
 
 // ─── Tipos internos ───────────────────────────────────────────────────────────
 
@@ -366,6 +367,41 @@ export function r10SafetyAlertChokingApnea(input: RuleInput): AlertDraft | null 
   return null;
 }
 
+/**
+ * R11 — Dose do calendário PNI sem registro (calculado, não declarado).
+ * Diferente de R3 (que reflete o status manual do último registro), esta
+ * regra cruza a data de nascimento com o calendário vacinal PNI
+ * (lib/vaccination/schedule.ts) e detecta doses sem registro após a janela.
+ *
+ * Categoria ATTENTION de propósito: ausência de registro no PueriCare NÃO
+ * significa dose não aplicada — a criança pode ter sido vacinada em outro
+ * serviço. O alerta orienta conferir a caderneta, nunca conclui atraso.
+ * Promoção a HIGH_PRIORITY só com regra oficial específica por vacina e
+ * validação profissional (ver LIMITES CONHECIDOS em schedule.ts).
+ * Fonte: PNI/Ministério da Saúde — Calendário Nacional de Vacinação da Criança.
+ */
+export function r11VaccineDoseOverdue(input: RuleInput): AlertDraft | null {
+  const { child, vaccinationRecords, referenceDate } = input;
+
+  const schedule = buildVaccinationSchedule(child.birthDate, vaccinationRecords, referenceDate);
+  const possibleDelay = schedule.filter((d) => d.status === 'possible_delay');
+  if (possibleDelay.length === 0) return null;
+
+  const exemplos = possibleDelay
+    .slice(0, 3)
+    .map((d) => `${d.vaccine} (${d.dose})`)
+    .join(', ');
+  const resto = possibleDelay.length > 3 ? ` e mais ${possibleDelay.length - 3}` : '';
+
+  return {
+    ruleId: 'R11_VACCINE_DOSE_OVERDUE',
+    category: 'ATTENTION',
+    title: 'Vacinação a conferir',
+    description: `Não há registro no PueriCare de ${possibleDelay.length} dose(s) prevista(s) no calendário PNI para ${child.fullName}: ${exemplos}${resto}. Isso não significa que a dose não foi aplicada — conferir a caderneta de vacinação e registrar as doses já aplicadas.`,
+    clinicalSource: 'PNI/Ministério da Saúde — Calendário Nacional de Vacinação da Criança (referência 2026)',
+  };
+}
+
 // ─── Executor de todas as regras ──────────────────────────────────────────────
 
 /** Todas as regras disponíveis — ordem por gravidade (HIGH_PRIORITY primeiro) */
@@ -379,6 +415,7 @@ const RULES = [
   r1NoConsultUnder24m,
   r2NoConsultOver24m,
   r4NoGrowth90d,
+  r11VaccineDoseOverdue,
   r6DevelopmentFollowUp,
 ];
 

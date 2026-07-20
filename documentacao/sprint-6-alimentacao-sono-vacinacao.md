@@ -74,6 +74,20 @@ Ministério da Saúde)** — fonte e versão que não estão incorporadas a este
 projeto. Nenhum nome de vacina, idade de aplicação ou intervalo entre doses
 foi codificado a partir de memória.
 
+> **Atualização (2026-07)**: o calendário PNI da criança (referência 2026)
+> foi incorporado em `src/lib/vaccination/schedule.ts` (tabela estática
+> versionada, fonte MS/PNI), com cálculo da situação de cada dose
+> (registrada / possível atraso / disponível / prevista), vínculo opcional
+> `scheduleKey` nos registros e visão do calendário na página de vacinação
+> do paciente. Influenza e Covid-19 aparecem como itens de conferência
+> manual (recomendação depende da campanha vigente — nunca geram sinal de
+> atraso). O alerta R11 do motor usa categoria ATTENTION com texto "Não há
+> registro... conferir a caderneta": ausência de registro no PueriCare não
+> prova dose não aplicada. A carência padrão de 30 dias para "possível
+> atraso" é convenção do sistema (doses com limite máximo oficial, como
+> rotavírus, usam o limite do PNI); a tabela e as regras aguardam validação
+> por profissional de vacinação antes de qualquer endurecimento dos alertas.
+
 ## 5. Modelo de dados (comum aos três)
 
 ```

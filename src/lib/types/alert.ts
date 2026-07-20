@@ -33,7 +33,8 @@ export type AlertRuleId =
   | 'R7_CHOKING_RECURRENT'
   | 'R8_PRONE_SLEEP_UNDER_6M'
   | 'R9_DEVELOPMENT_DELAY_MULTIPLE'
-  | 'R10_SAFETY_ALERT_CHOKING_APNEA';
+  | 'R10_SAFETY_ALERT_CHOKING_APNEA'
+  | 'R11_VACCINE_DOSE_OVERDUE';
 
 export interface ClinicalAlert {
   id: string;

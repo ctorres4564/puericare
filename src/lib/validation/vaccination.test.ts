@@ -54,6 +54,22 @@ describe('vaccinationRecordSchema — validações relevantes', () => {
     });
     expect(result.success).toBe(true);
   });
+
+  test('aceita scheduleKey válido do calendário PNI', () => {
+    const result = vaccinationRecordSchema.safeParse({
+      ...vaccinationRecordFormDefaults('2025-06-01'),
+      scheduleKey: 'penta-d1',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test('rejeita scheduleKey fora do calendário', () => {
+    const result = vaccinationRecordSchema.safeParse({
+      ...vaccinationRecordFormDefaults('2025-06-01'),
+      scheduleKey: 'covid-d99',
+    });
+    expect(result.success).toBe(false);
+  });
 });
 
 describe('toVaccinationRecordContentPayload', () => {
@@ -76,5 +92,32 @@ describe('toVaccinationRecordContentPayload', () => {
     });
     expect(payload.vaccineName).toBe('BCG');
     expect(payload.doseDescription).toBe('Dose única');
+  });
+
+  test('scheduleKey preenche nome e dose a partir do calendário', () => {
+    const payload = toVaccinationRecordContentPayload({
+      ...vaccinationRecordFormDefaults('2025-06-01'),
+      status: 'em_dia',
+      scheduleKey: 'penta-d1',
+    });
+    expect(payload.scheduleKey).toBe('penta-d1');
+    expect(payload.vaccineName).toBe('Pentavalente');
+    expect(payload.doseDescription).toBe('1ª dose');
+  });
+
+  test('texto livre tem precedência sobre o preenchimento do calendário', () => {
+    const payload = toVaccinationRecordContentPayload({
+      ...vaccinationRecordFormDefaults('2025-06-01'),
+      status: 'em_dia',
+      scheduleKey: 'penta-d1',
+      vaccineName: 'Pentavalente (lote especial)',
+    });
+    expect(payload.vaccineName).toBe('Pentavalente (lote especial)');
+    expect(payload.doseDescription).toBe('1ª dose');
+  });
+
+  test('sem scheduleKey, payload não carrega o campo', () => {
+    const payload = toVaccinationRecordContentPayload(vaccinationRecordFormDefaults('2025-06-01'));
+    expect(payload.scheduleKey).toBeUndefined();
   });
 });

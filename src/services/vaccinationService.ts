@@ -30,9 +30,9 @@ function normalizeRecord(id: string, data: Record<string, unknown>): Vaccination
 
 /**
  * Registra uma nova observação/dose de vacinação. Imutável após criada —
- * mesma política das demais entidades clínicas do Sprint 4-6. Não calcula
- * nem compara com nenhum calendário oficial (ver
- * documentacao/sprint-6-alimentacao-sono-vacinacao.md — pendência).
+ * mesma política das demais entidades clínicas do Sprint 4-6. Quando
+ * `scheduleKey` é informado, a dose é casada com o calendário PNI
+ * (lib/vaccination/schedule.ts); registros sem ela são casados por nome.
  */
 export async function createVaccinationRecord(
   professionalId: string,
@@ -41,6 +41,7 @@ export async function createVaccinationRecord(
     recordDate: string;
     ageInDays: number;
     status: VaccinationStatus;
+    scheduleKey?: string;
     vaccineName?: string;
     doseDescription?: string;
     lot?: string;
@@ -59,6 +60,7 @@ export async function createVaccinationRecord(
     recordDate: payload.recordDate,
     ageInDays: payload.ageInDays,
     status: payload.status,
+    scheduleKey: payload.scheduleKey,
     vaccineName: payload.vaccineName,
     doseDescription: payload.doseDescription,
     lot: payload.lot,

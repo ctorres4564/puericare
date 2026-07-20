@@ -3,20 +3,22 @@
  *
  * `prd.txt` (seção 6) define vacinação como um "campo simples": Em dia /
  * Atrasada / Não informado — uma classificação feita pelo profissional a
- * partir da caderneta de vacinação, não calculada pelo sistema. O
- * planejamento do mvp.txt (Módulo 8) descreve uma visão maior (calendário
- * vacinal, próximas vacinas, vacinas atrasadas, alertas de pendência) que
- * exigiria o calendário oficial do PNI (Ministério da Saúde) — não
- * incorporado a este projeto. Por isso:
+ * partir da caderneta de vacinação. A visão maior do mvp.txt (Módulo 8 —
+ * calendário vacinal, próximas vacinas, vacinas atrasadas) foi incorporada
+ * depois, via lib/vaccination/schedule.ts (calendário PNI versionado no
+ * código). Estado atual:
  *
- * - Implementado: registro do status (campo simples do PRD) e registro
- *   opcional de doses aplicadas (nome, data, lote, estabelecimento) — dados
- *   digitados livremente pelo profissional, sem comparação com nenhum
- *   calendário.
- * - NÃO implementado: calendário vacinal oficial, cálculo automático de
- *   "vacinas atrasadas"/"próximas vacinas", alertas de pendência,
- *   recomendação automática de vacina. Ver
- *   documentacao/sprint-6-alimentacao-sono-vacinacao.md (pendência).
+ * - Implementado: registro do status (campo simples do PRD), registro
+ *   opcional de doses aplicadas (nome, data, lote, estabelecimento) e
+ *   calendário vacinal PNI referência 2026 (lib/vaccination/schedule.ts):
+ *   quando o registro informa `scheduleKey`, a dose é casada diretamente
+ *   com o calendário; registros antigos (só texto livre) são casados por
+ *   nome. O sistema calcula a situação de cada dose (registrada / possível
+ *   atraso / disponível / prevista) — sempre como sinal de conferência, não
+ *   conclusão clínica. O `status` manual continua existindo como avaliação
+ *   do profissional.
+ * - Vacinas sazonais/por campanha (influenza, Covid-19): aparecem como
+ *   itens de conferência manual, sem cálculo de atraso.
  */
 export type VaccinationStatus = 'em_dia' | 'atrasada' | 'nao_informado';
 
@@ -33,10 +35,18 @@ export interface VaccinationRecord {
   ageInDays: number;
 
   /**
-   * Status avaliado pelo profissional no momento do registro — nunca
-   * calculado a partir de um calendário (não implementado, ver nota acima).
+   * Status avaliado pelo profissional no momento do registro — avaliação
+   * humana, independente do cálculo automático do calendário (scheduleKey).
    */
   status: VaccinationStatus;
+
+  /**
+   * Chave da dose no calendário PNI (ScheduledDose.key em
+   * lib/vaccination/schedule.ts), quando a visita aplicou uma dose do
+   * calendário. Opcional e imutável — registros sem ela são casados por
+   * `vaccineName` (heurística de alias).
+   */
+  scheduleKey?: string;
 
   /** Nome da vacina aplicada nesta visita, se houver (texto livre) */
   vaccineName?: string;

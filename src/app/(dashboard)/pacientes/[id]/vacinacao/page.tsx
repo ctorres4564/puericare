@@ -2,16 +2,17 @@
 
 export const dynamic = 'force-dynamic';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { getChild } from '@/services/childService';
 import { listVaccinationRecordsByProfessional } from '@/services/vaccinationService';
 import { formatAgeInDays } from '@/lib/consultations/ageInDays';
-import { vaccinationStatusLabels, vaccinationStatusBadgeClasses } from '@/lib/vaccination/labels';
+import { vaccinationStatusLabels, vaccinationStatusBadgeClasses, scheduleDoseStatusLabels, scheduleDoseStatusBadgeClasses, scheduleAgeLabel } from '@/lib/vaccination/labels';
+import { buildVaccinationSchedule, summarizeSchedule, sortForDisplay, PNI_REFERENCE } from '@/lib/vaccination/schedule';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import { Card, CardHeader } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Alert';
 import type { Child, VaccinationRecord } from '@/lib/types';
 
@@ -24,6 +25,17 @@ export default function VacinacaoPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const schedule = useMemo(
+    () =>
+      child
+        ? sortForDisplay(
+            buildVaccinationSchedule(child.birthDate, records, new Date().toISOString().slice(0, 10))
+          )
+        : [],
+    [child, records]
+  );
+  const scheduleSummary = useMemo(() => summarizeSchedule(schedule), [schedule]);
 
   useEffect(() => {
     if (!userProfile) return;
@@ -76,6 +88,60 @@ export default function VacinacaoPage() {
               Paciente inativo — não é possível registrar novas observações. O histórico abaixo é preservado.
             </Alert>
           )}
+
+          <Card>
+            <CardHeader
+              title={`Calendário vacinal — PNI referência ${PNI_REFERENCE.version}`}
+              description={`Vacinas de esquema fixo, conforme ${PNI_REFERENCE.label} (atualizado em ${PNI_REFERENCE.updatedAt}). Influenza e Covid-19 devem ser conferidas separadamente, conforme as recomendações vigentes — não geram sinal de atraso.`}
+            />
+            <div className="mb-4 flex flex-wrap gap-2">
+              {scheduleSummary.possible_delay > 0 && (
+                <span className={`rounded-full px-3 py-1 text-xs font-medium ${scheduleDoseStatusBadgeClasses.possible_delay}`}>
+                  {scheduleSummary.possible_delay} com possível atraso
+                </span>
+              )}
+              {scheduleSummary.available > 0 && (
+                <span className={`rounded-full px-3 py-1 text-xs font-medium ${scheduleDoseStatusBadgeClasses.available}`}>
+                  {scheduleSummary.available} disponível(is)
+                </span>
+              )}
+              <span className={`rounded-full px-3 py-1 text-xs font-medium ${scheduleDoseStatusBadgeClasses.planned}`}>
+                {scheduleSummary.planned} prevista(s)
+              </span>
+              <span className={`rounded-full px-3 py-1 text-xs font-medium ${scheduleDoseStatusBadgeClasses.registered}`}>
+                {scheduleSummary.registered} registrada(s)
+              </span>
+            </div>
+            <ul className="flex flex-col divide-y" style={{ borderColor: 'var(--color-border)' }}>
+              {schedule.map((d) => (
+                <li key={d.key} className="flex items-center justify-between gap-4 py-2">
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                      {d.vaccine} — {d.dose}
+                    </p>
+                    <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                      {d.status === 'pending_check'
+                        ? d.appliedDate
+                          ? `Último registro em ${new Date(d.appliedDate + 'T00:00:00').toLocaleDateString('pt-BR')} · conferir recomendação vigente`
+                          : 'Conferir recomendação vigente — sem cálculo de atraso'
+                        : d.status === 'registered' && d.appliedDate
+                          ? `Registrada em ${new Date(d.appliedDate + 'T00:00:00').toLocaleDateString('pt-BR')}`
+                          : `Recomendada ${scheduleAgeLabel(d.ageDays)} · ${new Date(d.dueDate + 'T00:00:00').toLocaleDateString('pt-BR')}`}
+                    </p>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ${scheduleDoseStatusBadgeClasses[d.status]}`}
+                  >
+                    {scheduleDoseStatusLabels[d.status]}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
+            Registros
+          </h3>
 
           {records.length === 0 ? (
             <Card>

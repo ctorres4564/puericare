@@ -5,12 +5,15 @@ export const dynamic = 'force-dynamic';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { listChildrenByProfessional, deactivateChild } from '@/services/childService';
+import { listVaccinationRecordsByProfessional } from '@/services/vaccinationService';
 import { filterActiveChildren, calculateAge } from '@/lib/children/childList';
+import { countPossibleDelayDoses } from '@/lib/vaccination/schedule';
+import { scheduleDoseStatusBadgeClasses } from '@/lib/vaccination/labels';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
-import type { Child, SexAtBirth } from '@/lib/types';
+import type { Child, SexAtBirth, VaccinationRecord } from '@/lib/types';
 
 const sexLabels: Record<SexAtBirth, string> = {
   female: 'Feminino',
@@ -22,6 +25,7 @@ const sexLabels: Record<SexAtBirth, string> = {
 export default function PacientesPage() {
   const { userProfile } = useAuth();
   const [children, setChildren] = useState<Child[]>([]);
+  const [vaccinationRecords, setVaccinationRecords] = useState<VaccinationRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -29,13 +33,31 @@ export default function PacientesPage() {
 
   useEffect(() => {
     if (!userProfile) return;
-    listChildrenByProfessional(userProfile.uid)
-      .then(setChildren)
+    Promise.all([
+      listChildrenByProfessional(userProfile.uid),
+      listVaccinationRecordsByProfessional(userProfile.uid),
+    ])
+      .then(([loadedChildren, loadedRecords]) => {
+        setChildren(loadedChildren);
+        setVaccinationRecords(loadedRecords);
+      })
       .catch(() => setError('Não foi possível carregar os pacientes.'))
       .finally(() => setLoading(false));
   }, [userProfile]);
 
   const filtered = useMemo(() => filterActiveChildren(children, search), [children, search]);
+
+  /** Doses em "possível atraso" por criança — alimenta o badge "Vacinação a conferir" */
+  const possibleDelayByChild = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const map = new Map<string, number>();
+    for (const child of children) {
+      if (!child.active) continue; // paciente inativo não gera pendência
+      const records = vaccinationRecords.filter((r) => r.childId === child.id);
+      map.set(child.id, countPossibleDelayDoses(child.birthDate, records, today));
+    }
+    return map;
+  }, [children, vaccinationRecords]);
 
   const handleDeactivate = async (id: string) => {
     setConfirmingId(null);
@@ -88,6 +110,14 @@ export default function PacientesPage() {
                 <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
                   {calculateAge(child.birthDate)} · {sexLabels[child.sexAtBirth]} · Responsável: {child.caregiverName}
                 </p>
+                {(possibleDelayByChild.get(child.id) ?? 0) > 0 && (
+                  <span
+                    className={`mt-1 inline-block rounded-full px-3 py-1 text-xs font-medium ${scheduleDoseStatusBadgeClasses.possible_delay}`}
+                    title="Há doses do calendário PNI sem registro no PueriCare. Isso não significa que não foram aplicadas — conferir a caderneta de vacinação."
+                  >
+                    Vacinação a conferir
+                  </span>
+                )}
               </div>
 
               <div className="flex shrink-0 flex-wrap items-center gap-2">

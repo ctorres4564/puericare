@@ -17,7 +17,8 @@ import {
   vaccinationStatuses,
   type VaccinationRecordFormValues,
 } from '@/lib/validation/vaccination';
-import { vaccinationStatusLabels } from '@/lib/vaccination/labels';
+import { vaccinationStatusLabels, scheduleDoseLabel } from '@/lib/vaccination/labels';
+import { PNI_ALL_DOSES } from '@/lib/vaccination/schedule';
 import { calculateAgeInDays } from '@/lib/consultations/ageInDays';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -100,7 +101,7 @@ export default function NovoRegistroVacinacaoPage() {
           Novo registro de vacinação
         </h2>
         <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-          Sem calendário oficial integrado — status avaliado por você a partir da caderneta.
+          Vincule a dose ao calendário PNI para que o sistema acompanhe atrasos automaticamente.
         </p>
       </div>
 
@@ -132,6 +133,21 @@ export default function NovoRegistroVacinacaoPage() {
 
           <Card>
             <CardHeader title="Dose aplicada (opcional)" description="Preencha se esta visita incluiu aplicação de vacina." />
+            <Select
+              label="Dose do calendário PNI (opcional)"
+              error={errors.scheduleKey?.message}
+              {...register('scheduleKey')}
+            >
+              <option value="">Não vincular ao calendário</option>
+              {PNI_ALL_DOSES.map((d) => (
+                <option key={d.key} value={d.key}>
+                  {scheduleDoseLabel(d)}
+                </option>
+              ))}
+            </Select>
+            <p className="mt-1 mb-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+              Ao vincular, nome e dose são preenchidos automaticamente se deixados em branco.
+            </p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Input label="Nome da vacina" placeholder="ex.: Pentavalente" error={errors.vaccineName?.message} {...register('vaccineName')} />
               <Input label="Dose" placeholder="ex.: 1ª dose, reforço" error={errors.doseDescription?.message} {...register('doseDescription')} />
