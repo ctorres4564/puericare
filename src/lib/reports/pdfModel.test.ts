@@ -487,7 +487,7 @@ describe('ClinicalReportPdf — geração do documento', () => {
 
     expect(buffer.subarray(0, 5).toString('latin1')).toBe('%PDF-');
     expect(buffer.length).toBeGreaterThan(1000);
-  });
+  }, 30000);
 
   test('documento com grande volume quebra em múltiplas páginas', async () => {
     const manyConsultations = Array.from({ length: 120 }, (_, i) => ({

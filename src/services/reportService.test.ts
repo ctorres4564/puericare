@@ -83,7 +83,10 @@ describe('updateDraftReport', () => {
     });
 
     expect(updated.compositionSnapshot.narrative.purpose).toBe('Acompanhamento de rotina');
-    expect(updated.updatedAt).not.toBe(draft.updatedAt);
+    // >= em vez de !== : em runners rápidos, os dois `new Date().toISOString()`
+    // (criação e atualização) podem cair no mesmo milissegundo — timestamp
+    // igual não é um bug, só falta de resolução do relógio.
+    expect(updated.updatedAt >= draft.updatedAt).toBe(true);
   });
 
   test('lança ReportConflictError quando updatedAt não confere (edição em outra sessão)', async () => {

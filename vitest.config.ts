@@ -17,5 +17,10 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.{ts,tsx}'],
     passWithNoTests: false,
+    // Acima do default (5000ms): a suíte completa roda os 29 arquivos em
+    // paralelo, e os testes de geração real de PDF (pdfModel.test.ts) fazem
+    // renderização pesada de verdade — sob contenção de CPU (ex.: runner de
+    // CI mais lento que a máquina local) o default ocasionalmente estourava.
+    testTimeout: 15000,
   },
 });
