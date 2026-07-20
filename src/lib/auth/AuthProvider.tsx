@@ -7,7 +7,7 @@ import React, {
   useState,
   ReactNode,
 } from 'react';
-import { User, onAuthStateChanged, signOut } from 'firebase/auth';
+import { User, onAuthStateChanged, onIdTokenChanged, signOut } from 'firebase/auth';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { subscribeUserProfile } from '@/services/userService';
 import { establishSessionCookie, clearSessionCookie } from '@/lib/auth/session';
@@ -90,10 +90,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      // Estabelece o cookie de sessão server-side (verificado por proxy.ts).
-      // Cobre login, cadastro e sessão restaurada ao carregar a página.
-      void establishSessionCookie(usr);
-
       // Escuta o perfil em tempo real: se um ADMIN bloquear a conta
       // (active = false) ou alterar o papel durante a sessão, a mudança
       // tem efeito imediato — sem depender de novo login.
@@ -150,6 +146,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (retryTimer) clearTimeout(retryTimer);
       unsub();
     };
+  }, []);
+
+  // Mantém o cookie de sessão server-side (verificado por proxy.ts) sempre
+  // atualizado: onIdTokenChanged dispara no login/cadastro, na sessão
+  // restaurada ao carregar a página, E a cada renovação automática do
+  // idToken pelo SDK (~1h) — sem isso o cookie expiraria em 1h mesmo com a
+  // aba aberta e a sessão do Firebase continuando válida.
+  useEffect(() => {
+    const auth = getFirebaseAuth();
+    return onIdTokenChanged(auth, (usr) => {
+      if (usr) {
+        void establishSessionCookie(usr);
+      }
+    });
   }, []);
 
   const logout = async () => {

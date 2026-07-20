@@ -1,24 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminAuth, isAdminConfigured } from '@/lib/firebase/admin';
+import { verifyIdToken, SESSION_COOKIE_NAME } from '@/lib/auth/verifyIdToken';
 
 /**
  * Cookie de sessão server-side — complementa (não substitui) a proteção via
  * Firestore Security Rules, que continua sendo a camada real de autorização
- * de dados. Este endpoint só permite ao proxy.ts verificar autenticação
- * antes de servir uma rota protegida, sem depender do IndexedDB do
- * navegador (que não é enviado em requisições HTTP).
+ * de dados. Guarda o próprio ID token do Firebase (não um "session cookie"
+ * do Admin SDK — ver nota em lib/auth/verifyIdToken.ts sobre por quê).
+ *
+ * O ID token expira em ~1h; o cliente (Firebase SDK) o renova sozinho em
+ * segundo plano, e o AuthProvider chama este endpoint de novo a cada
+ * renovação (onIdTokenChanged), então o cookie se mantém atualizado
+ * enquanto a aba estiver aberta.
  */
-export const SESSION_COOKIE_NAME = 'session';
-const SESSION_EXPIRES_IN_MS = 1000 * 60 * 60 * 24 * 5; // 5 dias
+const COOKIE_MAX_AGE_SECONDS = 60 * 60; // 1h — mesma validade do idToken.
 
 export async function POST(request: NextRequest) {
-  if (!isAdminConfigured()) {
-    // Sem Admin SDK configurado (ex.: ambiente local sem a credencial) —
-    // não há sessão server-side para mintar; o guard client-side continua
-    // funcionando normalmente. Não é um erro do cliente.
-    return NextResponse.json({ ok: false, reason: 'admin-not-configured' }, { status: 200 });
-  }
-
   let idToken: unknown;
   try {
     ({ idToken } = await request.json());
@@ -29,26 +25,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'idToken é obrigatório.' }, { status: 400 });
   }
 
-  try {
-    const adminAuth = getAdminAuth();
-    // Verifica o ID token antes de mintar o cookie — recusa tokens
-    // inválidos/expirados/de outro projeto.
-    await adminAuth.verifyIdToken(idToken);
-    const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn: SESSION_EXPIRES_IN_MS });
-
-    const response = NextResponse.json({ ok: true });
-    response.cookies.set(SESSION_COOKIE_NAME, sessionCookie, {
-      maxAge: SESSION_EXPIRES_IN_MS / 1000,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-    });
-    return response;
-  } catch (err) {
-    console.error('[api/auth/session] Falha ao criar sessão:', err);
-    return NextResponse.json({ error: 'Não foi possível criar a sessão.' }, { status: 401 });
+  const valid = await verifyIdToken(idToken);
+  if (!valid) {
+    return NextResponse.json({ error: 'Token inválido.' }, { status: 401 });
   }
+
+  const response = NextResponse.json({ ok: true });
+  response.cookies.set(SESSION_COOKIE_NAME, idToken, {
+    maxAge: COOKIE_MAX_AGE_SECONDS,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+  });
+  return response;
 }
 
 /** Encerra a sessão server-side (chamado no logout). */
