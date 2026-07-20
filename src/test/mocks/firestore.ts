@@ -1,12 +1,22 @@
 /**
  * Fake em memória do `firebase/firestore`, cobrindo só o subconjunto da API
  * usado por src/services/*.ts (collection, doc, getDoc, getDocs, query,
- * where com "==", setDoc, updateDoc, serverTimestamp, Timestamp).
+ * where com "==", setDoc, updateDoc, deleteDoc, runTransaction,
+ * serverTimestamp, Timestamp).
  *
  * Não valida regras de segurança nem tipos do Firestore real — isso é
  * responsabilidade dos testes em tests/firestore.rules.test.ts (Emulator).
  * Aqui o objetivo é isolar a lógica dos services (services/*.ts) de uma
  * conexão real, para testes rápidos e sem dependências externas.
+ *
+ * `runTransaction`: as transações são SERIALIZADAS (uma fila de promises) —
+ * duas chamadas concorrentes a `runTransaction` nunca executam entrelaçadas
+ * aqui, cada uma roda do início ao fim antes da próxima começar. Isso é uma
+ * aproximação razoável do isolamento serializável real do Firestore (para
+ * testar "duas emissões concorrentes nunca recebem a mesma versão"), mas NÃO
+ * simula retry por conflito de leitura — essa garantia real depende do
+ * backend e é validada separadamente pelo Firestore Emulator
+ * (tests/firestore.rules.test.ts).
  *
  * Uso num arquivo de teste (o vi.mock precisa estar escrito literalmente
  * ali, por causa do hoisting do Vitest — não dá para encapsular numa
@@ -100,6 +110,10 @@ export async function updateDoc(ref: DocRef, updates: DocData): Promise<void> {
   collectionMap(ref.collection).set(ref.id, { ...existing, ...updates });
 }
 
+export async function deleteDoc(ref: DocRef): Promise<void> {
+  collectionMap(ref.collection).delete(ref.id);
+}
+
 export function where(field: string, op: string, value: unknown): WhereConstraint {
   return { __type: 'where', field, op, value };
 }
@@ -123,6 +137,45 @@ export async function getDocs(refOrQuery: CollectionRef | QueryRef) {
     .map(([id, data]) => ({ id, data: () => ({ ...data }) }));
 
   return { docs, size: docs.length, empty: docs.length === 0 };
+}
+
+interface FakeTransaction {
+  get(ref: DocRef): Promise<{ id: string; exists: () => boolean; data: () => DocData | undefined }>;
+  set(ref: DocRef, data: DocData): void;
+  update(ref: DocRef, updates: DocData): void;
+  delete(ref: DocRef): void;
+}
+
+/** Fila que serializa transações — ver nota de topo do arquivo. */
+let transactionQueue: Promise<unknown> = Promise.resolve();
+
+export async function runTransaction<T>(
+  _db: unknown,
+  updateFunction: (transaction: FakeTransaction) => Promise<T>
+): Promise<T> {
+  const run = transactionQueue.then(async () => {
+    const transaction: FakeTransaction = {
+      get: (ref) => getDoc(ref),
+      set: (ref, data) => {
+        collectionMap(ref.collection).set(ref.id, { ...data });
+      },
+      update: (ref, updates) => {
+        const existing = collectionMap(ref.collection).get(ref.id);
+        if (!existing) {
+          throw new Error(`[fake-firestore] transaction.update: documento ${ref.collection}/${ref.id} não existe`);
+        }
+        collectionMap(ref.collection).set(ref.id, { ...existing, ...updates });
+      },
+      delete: (ref) => {
+        collectionMap(ref.collection).delete(ref.id);
+      },
+    };
+    return updateFunction(transaction);
+  });
+  // Mantém a fila viva mesmo se esta transação rejeitar, sem propagar o erro
+  // para as próximas — cada chamador ainda recebe sua própria rejeição via `run`.
+  transactionQueue = run.catch(() => undefined);
+  return run;
 }
 
 export function serverTimestamp(): { __type: 'serverTimestamp' } {

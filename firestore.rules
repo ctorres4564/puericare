@@ -21,10 +21,20 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    function hasRole(role) {
+    /**
+     * Usuário autenticado COM CONTA ATIVA (users/{uid}.active == true).
+     * Contas bloqueadas por um ADMIN (active == false) perdem todo acesso
+     * aos dados — esta função é a base de todas as regras abaixo, então o
+     * bloqueio vale também para chamadas diretas pelo SDK/API, não só na UI.
+     */
+    function isActiveUser() {
       return isSignedIn()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && currentUserDoc().role == role;
+        && currentUserDoc().active == true;
+    }
+
+    function hasRole(role) {
+      return isActiveUser() && currentUserDoc().role == role;
     }
 
     function isAdmin() {
@@ -52,9 +62,11 @@ service cloud.firestore {
 
       // Dono pode atualizar seus dados, mas não o próprio papel nem o status ativo.
       // ADMIN pode alterar qualquer campo (ex.: promover, bloquear conta).
+      // Conta bloqueada (active == false) não atualiza nem o próprio perfil.
       allow update: if isSignedIn() && (
         isAdmin() ||
         (
+          isActiveUser() &&
           request.auth.uid == userId &&
           request.resource.data.role == resource.data.role &&
           request.resource.data.active == resource.data.active
@@ -66,7 +78,7 @@ service cloud.firestore {
 
     /* ── children/{childId} ── */
     match /children/{childId} {
-      allow read: if isSignedIn() && (
+      allow read: if isActiveUser() && (
         resource.data.professionalId == request.auth.uid ||
         request.auth.uid in resource.data.caregiverIds ||
         isAdmin()
@@ -77,7 +89,7 @@ service cloud.firestore {
         && request.resource.data.professionalId == request.auth.uid;
 
       // Só o profissional dono (ou admin) atualiza; professionalId é imutável.
-      allow update: if isSignedIn() && (
+      allow update: if isActiveUser() && (
         isAdmin() ||
         (
           resource.data.professionalId == request.auth.uid &&
@@ -91,7 +103,7 @@ service cloud.firestore {
     /* ── consultations/{consultationId} ── Sprint 3 ── */
     match /consultations/{consultationId} {
       // Sem portal do responsável nesta fase (v2.0) — só o profissional dono e ADMIN leem.
-      allow read: if isSignedIn() && (
+      allow read: if isActiveUser() && (
         resource.data.professionalId == request.auth.uid || isAdmin()
       );
 
@@ -103,7 +115,7 @@ service cloud.firestore {
         && childOf(request.resource.data.childId).active == true;
 
       // Só o profissional dono (ou admin) edita; childId e professionalId são imutáveis.
-      allow update: if isSignedIn() && (
+      allow update: if isActiveUser() && (
         isAdmin() ||
         (
           resource.data.professionalId == request.auth.uid &&
@@ -118,7 +130,7 @@ service cloud.firestore {
     /* ── growthMeasurements/{measurementId} ── Sprint 4 ── */
     match /growthMeasurements/{measurementId} {
       // Mesma política de leitura de consultations: sem portal do responsável nesta fase.
-      allow read: if isSignedIn() && (
+      allow read: if isActiveUser() && (
         resource.data.professionalId == request.auth.uid || isAdmin()
       );
 
@@ -136,7 +148,7 @@ service cloud.firestore {
     /* ── developmentAssessments/{assessmentId} ── Sprint 5 ── */
     match /developmentAssessments/{assessmentId} {
       // Mesma política de leitura de consultations/growthMeasurements.
-      allow read: if isSignedIn() && (
+      allow read: if isActiveUser() && (
         resource.data.professionalId == request.auth.uid || isAdmin()
       );
 
@@ -153,7 +165,7 @@ service cloud.firestore {
 
     /* ── feedingRecords/{recordId} ── Sprint 6 ── */
     match /feedingRecords/{recordId} {
-      allow read: if isSignedIn() && (
+      allow read: if isActiveUser() && (
         resource.data.professionalId == request.auth.uid || isAdmin()
       );
       allow create: if isProfessional()
@@ -166,7 +178,7 @@ service cloud.firestore {
 
     /* ── sleepRecords/{recordId} ── Sprint 6 ── */
     match /sleepRecords/{recordId} {
-      allow read: if isSignedIn() && (
+      allow read: if isActiveUser() && (
         resource.data.professionalId == request.auth.uid || isAdmin()
       );
       allow create: if isProfessional()
@@ -179,7 +191,7 @@ service cloud.firestore {
 
     /* ── vaccinationRecords/{recordId} ── Sprint 6 ── */
     match /vaccinationRecords/{recordId} {
-      allow read: if isSignedIn() && (
+      allow read: if isActiveUser() && (
         resource.data.professionalId == request.auth.uid || isAdmin()
       );
       allow create: if isProfessional()
@@ -193,18 +205,73 @@ service cloud.firestore {
     /* ── clinicalAlerts/{alertId} ── Sprint 7 ── */
     match /clinicalAlerts/{alertId} {
       // O profissional pode ler alertas vinculados a ele. Administradores podem ler tudo.
-      allow read: if isSignedIn() && (
+      allow read: if isActiveUser() && (
         resource.data.professionalId == request.auth.uid || isAdmin()
       );
       
       // Criar/atualizar alertas: Só profissional e admin.
-      allow create, update: if isSignedIn() && (
+      allow create, update: if isActiveUser() && (
         isAdmin() ||
         (
           request.resource.data.professionalId == request.auth.uid
         )
       );
 
+      allow delete: if isAdmin();
+    }
+
+    /* ── reports/{reportId} ── Sprint B.4 ── */
+    match /reports/{reportId} {
+      // Sem portal do responsável nesta fase — só o profissional dono e ADMIN leem.
+      allow read: if isActiveUser() && (
+        resource.data.professionalId == request.auth.uid || isAdmin()
+      );
+
+      // Só cria como DRAFT (version 0), para paciente próprio e ativo.
+      // Emissão é sempre uma transição por "update" (ver abaixo), nunca um create direto como ISSUED.
+      allow create: if isProfessional()
+        && request.resource.data.professionalId == request.auth.uid
+        && request.resource.data.status == 'DRAFT'
+        && request.resource.data.version == 0
+        && childOf(request.resource.data.childId).professionalId == request.auth.uid
+        && childOf(request.resource.data.childId).active == true;
+
+      // Duas transições possíveis, sempre a partir de um DRAFT próprio:
+      // 1) salvar rascunho (continua DRAFT, version não muda);
+      // 2) emitir (DRAFT -> ISSUED, version passa a > 0, issuedBy = uid autenticado).
+      // childId/professionalId são imutáveis. Um relatório ISSUED nunca é
+      // atualizado por ninguém (a condição `resource.data.status == 'DRAFT'`
+      // abaixo bloqueia isso incondicionalmente, inclusive para ADMIN).
+      allow update: if isActiveUser()
+        && resource.data.status == 'DRAFT'
+        && resource.data.professionalId == request.auth.uid
+        && request.resource.data.professionalId == resource.data.professionalId
+        && request.resource.data.childId == resource.data.childId
+        && (
+          (request.resource.data.status == 'DRAFT' && request.resource.data.version == resource.data.version)
+          ||
+          (request.resource.data.status == 'ISSUED'
+            && request.resource.data.version > 0
+            && request.resource.data.issuedBy == request.auth.uid
+            && request.resource.data.title is string
+            && request.resource.data.title.size() > 0)
+        );
+
+      // DRAFT: autor pode excluir o próprio rascunho. ISSUED: nunca (nem o autor) — só ADMIN, mesma política das demais coleções clínicas.
+      allow delete: if isAdmin() || (
+        isActiveUser() && resource.data.status == 'DRAFT' && resource.data.professionalId == request.auth.uid
+      );
+    }
+
+    /* ── reportCounters/{childId} ── Sprint B.4 ──
+     * Contador interno (um documento por criança) usado só para atribuir a
+     * próxima versão de relatório de forma atômica (via transaction no
+     * service). Não é lido pela UI diretamente. */
+    match /reportCounters/{childId} {
+      allow read: if isActiveUser() && (
+        childOf(childId).professionalId == request.auth.uid || isAdmin()
+      );
+      allow write: if isProfessional() && childOf(childId).professionalId == request.auth.uid;
       allow delete: if isAdmin();
     }
 

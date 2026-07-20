@@ -11,4 +11,5 @@ export * from './feeding';
 export * from './sleep';
 export * from './vaccination';
 export * from './alert';
+export * from './clinicalReport';
 
