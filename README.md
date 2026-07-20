@@ -4,7 +4,9 @@
 
 **Objetivo** – Prototipar um sistema de registro de consultas de puericultura para crianças de 0 a 5 anos e 11 meses.
 
-**Stack** – Next.js (App Router), React, TypeScript, Tailwind CSS, Firebase Auth, Firestore, Storage, Zod, React Hook Form, Vitest, React Testing Library, Playwright, Vercel.
+**Stack** – Next.js (App Router), React, TypeScript, Tailwind CSS, Firebase Auth, Firestore, Zod, React Hook Form, Vitest, Vercel.
+
+**Produção** – https://puericare.vercel.app (deploy automático a cada push em `master`; ver `SECURITY.md` § Produção).
 
 **Requisitos locais**
 - Node v22.14.0, npm v11.18.0
@@ -37,7 +39,7 @@ não é uma dependência instalada. Ver `SECURITY.md` § Pendências.
 
 **Segurança** – Consulte `SECURITY.md`.
 
-**Status atual** – Estrutura inicial criada, página home pronta.
+**Status atual** – Ver `documentacao/planejamento-sprints-restantes.md` para o mapeamento completo do que está pronto e do que falta do MVP original.
 
 ---
 

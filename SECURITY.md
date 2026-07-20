@@ -19,6 +19,13 @@ não existem estão listados em "Pendências", não aqui.
 - **Logs**: Não armazenar informações de identificação pessoal nos logs de servidor.
 - **Responsabilidade**: Este protótipo não deve receber dados reais de pacientes sem revisão de segurança adicional (ver Pendências).
 
+## Produção
+
+- **URL**: https://puericare.vercel.app (Vercel, projeto `puericare`, org `claudios-projects-d188f4f1`).
+- **Deploy automático**: conectado ao GitHub (`ctorres4564/puericare`, branch `master`) — todo push gera um novo deploy de produção automaticamente. Não há passo manual de deploy do app (diferente das Firestore Rules, que continuam exigindo `firebase deploy --only firestore:rules` explicitamente).
+- **Variáveis de ambiente**: as 6 chaves `NEXT_PUBLIC_FIREBASE_*` estão configuradas na Vercel para os ambientes Production e Preview (fora do repositório, como devem estar).
+- **O que isso NÃO significa**: a aplicação estar acessível publicamente não substitui os itens da lista de Pendências abaixo — em especial, não há CI/CD (o deploy acontece mesmo se os testes locais não tiverem sido rodados), não há LGPD implementado, e a app **continua sem estar pronta para dados reais de pacientes**.
+
 ## Pendências (não implementado ainda)
 
 - Proteção de rotas do dashboard é apenas client-side (sem verificação de sessão/token no servidor).
