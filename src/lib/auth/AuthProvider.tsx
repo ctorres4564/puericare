@@ -10,6 +10,7 @@ import React, {
 import { User, onAuthStateChanged, signOut } from 'firebase/auth';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { subscribeUserProfile } from '@/services/userService';
+import { establishSessionCookie, clearSessionCookie } from '@/lib/auth/session';
 import type { UserProfile } from '@/lib/types';
 
 interface AuthContextProps {
@@ -89,6 +90,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
+      // Estabelece o cookie de sessão server-side (verificado por proxy.ts).
+      // Cobre login, cadastro e sessão restaurada ao carregar a página.
+      void establishSessionCookie(usr);
+
       // Escuta o perfil em tempo real: se um ADMIN bloquear a conta
       // (active = false) ou alterar o papel durante a sessão, a mudança
       // tem efeito imediato — sem depender de novo login.
@@ -148,6 +153,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const logout = async () => {
+    await clearSessionCookie();
     await signOut(getFirebaseAuth());
     setUserProfile(null);
     setBlocked(false);

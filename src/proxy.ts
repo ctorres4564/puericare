@@ -1,32 +1,32 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getAdminAuth, isAdminConfigured } from '@/lib/firebase/admin';
+import { SESSION_COOKIE_NAME } from '@/app/api/auth/session/route';
 
 /**
- * proxy.ts — Redirecionamentos básicos (Next.js 16+, roda no runtime Node.js
- * por padrão a partir desta versão — não é mais Edge).
+ * proxy.ts — Redirecionamentos e verificação de sessão (Next.js 16+, roda no
+ * runtime Node.js por padrão a partir desta versão — não é mais Edge).
  *
- * Não verifica sessão/token aqui. O guard de autenticação é feito client-side
- * em (dashboard)/layout.tsx, e a autorização real dos dados é feita pelas
- * Firestore Security Rules (firestore.rules) — essa é a camada que de fato
- * protege os dados, independentemente do que a UI faz.
+ * Verifica o cookie de sessão (Admin SDK) antes de servir qualquer rota
+ * protegida — complementa, não substitui, as Firestore Security Rules
+ * (firestore.rules), que continuam sendo a camada real de autorização dos
+ * dados independentemente do que o proxy faz.
  *
- * Por que não verificar o token aqui: o Firebase Auth (client SDK, com
- * browserLocalPersistence) guarda a sessão no IndexedDB do navegador, que não
- * é enviado nas requisições HTTP. Para o proxy verificar autenticação de
- * verdade seria necessário migrar para cookies de sessão (Admin SDK
- * mintando/validando um session cookie), o que muda o fluxo de login/logout
- * do Sprint 1 e exige uma nova credencial (service account) — decisão
- * deliberadamente fora do escopo desta etapa de estabilização. O runtime
- * Node.js do proxy (novidade do Next 16) torna essa migração tecnicamente
- * viável no futuro, caso vire prioridade.
+ * Degradação graciosa deliberada: se `FIREBASE_ADMIN_CREDENTIALS` não
+ * estiver configurada (ex.: `next dev` local), o proxy NÃO bloqueia — volta
+ * ao comportamento anterior (guard só client-side em (dashboard)/layout.tsx)
+ * em vez de travar o app inteiro por falta de uma credencial opcional. Já
+ * uma sessão presente e INVÁLIDA (expirada, revogada, adulterada) é sempre
+ * rejeitada de verdade — a distinção é "não dá para checar" vs. "checamos e
+ * é inválida".
  */
 
-const PUBLIC_PATHS = ['/login', '/esqueci-senha', '/api'];
+const PUBLIC_PATHS = ['/login', '/cadastro', '/esqueci-senha', '/setup', '/api'];
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Permite recursos estáticos e APIs
+  // Permite recursos estáticos, APIs e páginas públicas
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon') ||
@@ -40,7 +40,25 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  return NextResponse.next();
+  // Admin SDK não configurado: mantém o comportamento anterior (client-side only).
+  if (!isAdminConfigured()) {
+    return NextResponse.next();
+  }
+
+  const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+  if (!sessionCookie) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  try {
+    await getAdminAuth().verifySessionCookie(sessionCookie);
+    return NextResponse.next();
+  } catch {
+    // Cookie presente mas inválido/expirado/revogado — nega e limpa.
+    const response = NextResponse.redirect(new URL('/login', request.url));
+    response.cookies.delete(SESSION_COOKIE_NAME);
+    return response;
+  }
 }
 
 export const config = {
