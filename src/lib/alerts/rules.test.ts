@@ -25,6 +25,7 @@ import type {
   Consultation,
   GrowthMeasurement,
   DevelopmentAssessment,
+  DevelopmentMilestoneEntry,
   FeedingRecord,
   SleepRecord,
   VaccinationRecord,
@@ -77,7 +78,7 @@ function makeGrowth(date: string, weightKg?: number): GrowthMeasurement {
   };
 }
 
-function makeDevelopment(date: string, milestones: { domain: any; description: string; status: any }[] = []): DevelopmentAssessment {
+function makeDevelopment(date: string, milestones: DevelopmentMilestoneEntry[] = []): DevelopmentAssessment {
   return {
     id: `dev-${date}`,
     childId: 'child-1',

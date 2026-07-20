@@ -11,6 +11,9 @@ import { listConsultationsByProfessional } from '@/services/consultationService'
 import { listGrowthMeasurementsByProfessional } from '@/services/growthService';
 import { listDevelopmentAssessmentsByProfessional } from '@/services/developmentService';
 import { listVaccinationRecordsByProfessional } from '@/services/vaccinationService';
+import { listFeedingRecordsByProfessional } from '@/services/feedingService';
+import { listSleepRecordsByProfessional } from '@/services/sleepService';
+import { listAlertsByProfessional } from '@/services/alertService';
 import { buildTimeline } from '@/lib/children/timeline';
 import { formatAgeInDays } from '@/lib/consultations/ageInDays';
 import { domainLabels, milestoneStatusLabels } from '@/lib/development/labels';
@@ -25,6 +28,10 @@ import type {
   GrowthMeasurement,
   DevelopmentAssessment,
   VaccinationRecord,
+  FeedingRecord,
+  SleepRecord,
+  ClinicalAlert,
+  AlertCategory,
 } from '@/lib/types';
 
 const statusLabels: Record<ConsultationStatus, string> = {
@@ -54,6 +61,26 @@ function developmentSummary(a: DevelopmentAssessment): string {
   return `${domainLabels[first.domain]}: ${milestoneStatusLabels[first.status]}${rest > 0 ? ` (+${rest})` : ''}`;
 }
 
+function sleepSummary(r: SleepRecord): string {
+  const parts: string[] = [];
+  if (r.bedtime) parts.push(`dorme às ${r.bedtime}`);
+  if (r.sleepDurationHours !== undefined) parts.push(`${r.sleepDurationHours}h de sono`);
+  if (r.nightWakings !== undefined) parts.push(`${r.nightWakings} despertar${r.nightWakings === 1 ? '' : 'es'}`);
+  return parts.join(' · ');
+}
+
+const alertCategoryLabels: Record<AlertCategory, string> = {
+  HIGH_PRIORITY: 'Alta prioridade',
+  ATTENTION: 'Atenção',
+  INFO: 'Informativo',
+};
+
+const alertCategoryBadgeClasses: Record<AlertCategory, string> = {
+  HIGH_PRIORITY: 'bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200',
+  ATTENTION: 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
+  INFO: 'bg-blue-50 text-blue-800 dark:bg-blue-950 dark:text-blue-200',
+};
+
 export default function LinhaDoTempoPage() {
   const { id: childId } = useParams<{ id: string }>();
   const { userProfile } = useAuth();
@@ -63,6 +90,9 @@ export default function LinhaDoTempoPage() {
   const [measurements, setMeasurements] = useState<GrowthMeasurement[]>([]);
   const [developmentAssessments, setDevelopmentAssessments] = useState<DevelopmentAssessment[]>([]);
   const [vaccinationRecords, setVaccinationRecords] = useState<VaccinationRecord[]>([]);
+  const [feedingRecords, setFeedingRecords] = useState<FeedingRecord[]>([]);
+  const [sleepRecords, setSleepRecords] = useState<SleepRecord[]>([]);
+  const [alerts, setAlerts] = useState<ClinicalAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,16 +108,32 @@ export default function LinhaDoTempoPage() {
         }
         setChild(foundChild);
 
-        const [allConsultations, allMeasurements, allDevelopment, allVaccinations] = await Promise.all([
+        const [
+          allConsultations,
+          allMeasurements,
+          allDevelopment,
+          allVaccinations,
+          allFeeding,
+          allSleep,
+          allAlerts,
+        ] = await Promise.all([
           listConsultationsByProfessional(userProfile.uid),
           listGrowthMeasurementsByProfessional(userProfile.uid),
           listDevelopmentAssessmentsByProfessional(userProfile.uid),
           listVaccinationRecordsByProfessional(userProfile.uid),
+          listFeedingRecordsByProfessional(userProfile.uid),
+          listSleepRecordsByProfessional(userProfile.uid),
+          listAlertsByProfessional(userProfile.uid),
         ]);
         setConsultations(allConsultations.filter((c) => c.childId === childId));
         setMeasurements(allMeasurements.filter((m) => m.childId === childId));
         setDevelopmentAssessments(allDevelopment.filter((a) => a.childId === childId));
         setVaccinationRecords(allVaccinations.filter((v) => v.childId === childId));
+        setFeedingRecords(allFeeding.filter((r) => r.childId === childId));
+        setSleepRecords(allSleep.filter((r) => r.childId === childId));
+        // Só alertas ativos entram na linha do tempo — resolvidos/ignorados
+        // são histórico administrativo, não evento clínico.
+        setAlerts(allAlerts.filter((a) => a.childId === childId && a.status === 'active'));
       } catch {
         setError('Não foi possível carregar a linha do tempo.');
       } finally {
@@ -97,8 +143,8 @@ export default function LinhaDoTempoPage() {
   }, [childId, userProfile]);
 
   const timeline = useMemo(
-    () => buildTimeline(consultations, measurements, developmentAssessments, vaccinationRecords),
-    [consultations, measurements, developmentAssessments, vaccinationRecords]
+    () => buildTimeline(consultations, measurements, developmentAssessments, vaccinationRecords, feedingRecords, sleepRecords, alerts),
+    [consultations, measurements, developmentAssessments, vaccinationRecords, feedingRecords, sleepRecords, alerts]
   );
 
   return (
@@ -111,7 +157,14 @@ export default function LinhaDoTempoPage() {
           <h2 className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>
             {loading ? 'Linha do tempo' : child ? `Linha do tempo — ${child.fullName}` : 'Linha do tempo'}
           </h2>
-          {child?.active && <Button href={`/pacientes/${childId}/consultas/nova`}>+ Nova consulta</Button>}
+          {child && (
+            <div className="flex shrink-0 items-center gap-2">
+              <Button variant="secondary" href={`/pacientes/${childId}/relatorio`}>
+                Relatório clínico
+              </Button>
+              {child.active && <Button href={`/pacientes/${childId}/consultas/nova`}>+ Nova consulta</Button>}
+            </div>
+          )}
         </div>
       </div>
 
@@ -136,7 +189,7 @@ export default function LinhaDoTempoPage() {
           {timeline.length === 0 ? (
             <Card>
               <p className="text-center text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                Nenhum registro ainda — nem consulta, medição ou avaliação de desenvolvimento.
+                Nenhum registro ainda — nem consulta, medição, avaliação ou registro de rotina.
               </p>
             </Card>
           ) : (
@@ -212,6 +265,88 @@ export default function LinhaDoTempoPage() {
                               Necessita acompanhamento
                             </span>
                           )}
+                        </div>
+                      </Card>
+                    </Link>
+                  );
+                }
+
+                if (entry.kind === 'feedingRecord') {
+                  return (
+                    <Link key={`f-${entry.id}`} href={`/pacientes/${childId}/alimentacao`}>
+                      <Card className="transition-colors hover:bg-[var(--color-primary-light)]">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="text-xs font-medium uppercase" style={{ color: 'var(--color-text-subtle)' }}>
+                              Alimentação
+                            </p>
+                            <p className="font-semibold" style={{ color: 'var(--color-text)' }}>
+                              {new Date(entry.data.recordDate + 'T00:00:00').toLocaleDateString('pt-BR')}
+                            </p>
+                            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                              {formatAgeInDays(entry.data.ageInDays)}
+                            </p>
+                          </div>
+                          {entry.data.requiresFollowUp && (
+                            <span className="shrink-0 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                              Necessita acompanhamento
+                            </span>
+                          )}
+                        </div>
+                      </Card>
+                    </Link>
+                  );
+                }
+
+                if (entry.kind === 'sleepRecord') {
+                  return (
+                    <Link key={`s-${entry.id}`} href={`/pacientes/${childId}/sono`}>
+                      <Card className="transition-colors hover:bg-[var(--color-primary-light)]">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="text-xs font-medium uppercase" style={{ color: 'var(--color-text-subtle)' }}>
+                              Sono
+                            </p>
+                            <p className="font-semibold" style={{ color: 'var(--color-text)' }}>
+                              {new Date(entry.data.recordDate + 'T00:00:00').toLocaleDateString('pt-BR')}
+                            </p>
+                            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                              {formatAgeInDays(entry.data.ageInDays)}
+                              {sleepSummary(entry.data) ? ` · ${sleepSummary(entry.data)}` : ''}
+                            </p>
+                          </div>
+                          {entry.data.requiresFollowUp && (
+                            <span className="shrink-0 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                              Necessita acompanhamento
+                            </span>
+                          )}
+                        </div>
+                      </Card>
+                    </Link>
+                  );
+                }
+
+                if (entry.kind === 'clinicalAlert') {
+                  return (
+                    <Link key={`a-${entry.id}`} href="/alertas">
+                      <Card className="transition-colors hover:bg-[var(--color-primary-light)]">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="text-xs font-medium uppercase" style={{ color: 'var(--color-text-subtle)' }}>
+                              Alerta clínico
+                            </p>
+                            <p className="font-semibold" style={{ color: 'var(--color-text)' }}>
+                              {entry.data.title}
+                            </p>
+                            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                              Detectado em {new Date(entry.data.detectedAt).toLocaleDateString('pt-BR')}
+                            </p>
+                          </div>
+                          <span
+                            className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ${alertCategoryBadgeClasses[entry.data.category]}`}
+                          >
+                            {alertCategoryLabels[entry.data.category]}
+                          </span>
                         </div>
                       </Card>
                     </Link>

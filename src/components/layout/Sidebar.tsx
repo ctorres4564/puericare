@@ -19,7 +19,8 @@ const navItems: NavItem[] = [
   { label: 'Crescimento', href: '/crescimento', icon: '📈' },
   { label: 'Vacinação',   href: '/vacinacao',   icon: '💉' },
   { label: 'Alertas',     href: '/alertas',     icon: '🔔' },
-  { label: 'Conhecimento',href: '/conhecimento',icon: '🔬' },
+  // "Conhecimento" (base científica) ainda não está implementado — o item
+  // volta à navegação quando o módulo for entregue (sprint futuro).
 ];
 
 export function Sidebar() {

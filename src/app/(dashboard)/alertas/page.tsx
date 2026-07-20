@@ -172,19 +172,27 @@ export default function AlertasPage() {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('active');
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
 
-  const loadAlerts = useCallback(async () => {
+  // Recarrega a lista sem mexer no estado de loading inicial — usada após
+  // rodar o motor de alertas (evento de clique, não efeito).
+  const refreshAlerts = useCallback(async () => {
     if (!userProfile) return;
-    try {
-      const all = await listAlertsByProfessional(userProfile.uid);
-      setAlerts(all);
-    } catch {
-      setError('Não foi possível carregar os alertas.');
-    } finally {
-      setLoading(false);
-    }
+    const all = await listAlertsByProfessional(userProfile.uid);
+    setAlerts(all);
   }, [userProfile]);
 
-  useEffect(() => { loadAlerts(); }, [loadAlerts]);
+  useEffect(() => {
+    if (!userProfile) return;
+    (async () => {
+      try {
+        const all = await listAlertsByProfessional(userProfile.uid);
+        setAlerts(all);
+      } catch {
+        setError('Não foi possível carregar os alertas.');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [userProfile]);
 
   const handleRunEngine = async () => {
     if (!userProfile) return;
@@ -192,7 +200,7 @@ export default function AlertasPage() {
     setError(null);
     try {
       await runAlertEngineForProfessional(userProfile.uid);
-      await loadAlerts();
+      await refreshAlerts();
     } catch {
       setError('Erro ao executar o motor de alertas. Tente novamente.');
     } finally {

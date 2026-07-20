@@ -1,26 +1,41 @@
-import type { Consultation, GrowthMeasurement, DevelopmentAssessment, VaccinationRecord } from '@/lib/types';
+import type {
+  Consultation,
+  GrowthMeasurement,
+  DevelopmentAssessment,
+  VaccinationRecord,
+  FeedingRecord,
+  SleepRecord,
+  ClinicalAlert,
+} from '@/lib/types';
 
 /**
  * Linha do tempo do paciente (Módulo 10 do planejamento): mescla consultas,
- * medições de crescimento, registros de desenvolvimento e vacinação em
- * ordem cronológica. Alimentação e sono ficam de fora da linha do tempo
- * compartilhada nesta etapa — o Módulo 10 só lista "medidas" e "vacinas"
- * explicitamente, não alimentação/sono (ver
- * documentacao/sprint-6-alimentacao-sono-vacinacao.md). Não cria nenhuma
- * coleção nova no Firestore — combinação em memória das listas já
+ * medições de crescimento, registros de desenvolvimento, vacinação,
+ * alimentação, sono e alertas clínicos em ordem cronológica. Não cria
+ * nenhuma coleção nova no Firestore — combinação em memória das listas já
  * existentes (decisão do Sprint 3, mantida).
+ *
+ * Alertas entram pela data de detecção (`detectedAt`) e só os ativos são
+ * exibidos pela página — resolvidos/ignorados são histórico administrativo,
+ * não evento clínico da linha do tempo.
  */
 export type TimelineEntry =
   | { kind: 'consultation'; date: string; id: string; data: Consultation }
   | { kind: 'growthMeasurement'; date: string; id: string; data: GrowthMeasurement }
   | { kind: 'developmentAssessment'; date: string; id: string; data: DevelopmentAssessment }
-  | { kind: 'vaccinationRecord'; date: string; id: string; data: VaccinationRecord };
+  | { kind: 'vaccinationRecord'; date: string; id: string; data: VaccinationRecord }
+  | { kind: 'feedingRecord'; date: string; id: string; data: FeedingRecord }
+  | { kind: 'sleepRecord'; date: string; id: string; data: SleepRecord }
+  | { kind: 'clinicalAlert'; date: string; id: string; data: ClinicalAlert };
 
 export function buildTimeline(
   consultations: Consultation[],
   measurements: GrowthMeasurement[],
   developmentAssessments: DevelopmentAssessment[] = [],
-  vaccinationRecords: VaccinationRecord[] = []
+  vaccinationRecords: VaccinationRecord[] = [],
+  feedingRecords: FeedingRecord[] = [],
+  sleepRecords: SleepRecord[] = [],
+  alerts: ClinicalAlert[] = []
 ): TimelineEntry[] {
   const entries: TimelineEntry[] = [
     ...consultations
@@ -32,6 +47,15 @@ export function buildTimeline(
     ),
     ...vaccinationRecords.map(
       (v): TimelineEntry => ({ kind: 'vaccinationRecord', date: v.recordDate, id: v.id, data: v })
+    ),
+    ...feedingRecords.map(
+      (r): TimelineEntry => ({ kind: 'feedingRecord', date: r.recordDate, id: r.id, data: r })
+    ),
+    ...sleepRecords.map(
+      (r): TimelineEntry => ({ kind: 'sleepRecord', date: r.recordDate, id: r.id, data: r })
+    ),
+    ...alerts.map(
+      (a): TimelineEntry => ({ kind: 'clinicalAlert', date: a.detectedAt.slice(0, 10), id: a.id, data: a })
     ),
   ];
 
