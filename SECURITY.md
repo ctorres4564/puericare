@@ -7,6 +7,7 @@ não existem estão listados em "Pendências", não aqui.
 
 - **Autenticação**: Firebase Authentication com email/senha. Tokens são armazenados apenas no `localStorage` e renovados automaticamente.
 - **Regras do Firestore** (`firestore.rules`, versionado no repo): acesso por papel (`ADMIN`, `PROFESSIONAL`, `CAREGIVER`), não por `ownerId`.
+  - **Bloqueio de contas**: toda operação em dados clínicos exige `users/{uid}.active == true` (função `isActiveUser()` nas regras). Uma conta desativada por um ADMIN perde acesso imediatamente, inclusive via SDK/API direto — e o app detecta o bloqueio em tempo real (listener no documento do perfil) e exibe tela de conta desativada. O usuário bloqueado só mantém a leitura do próprio documento em `/users/{uid}` (necessária para o app detectar o bloqueio).
   - `users/{uid}`: cada usuário lê/cria/edita apenas o próprio documento; não pode alterar o próprio `role` ou `active`; **não é possível criar um usuário com `role == 'ADMIN'` pelo cliente**. ADMIN pode ler/editar/apagar qualquer perfil.
   - `children/{id}`: leitura para o `professionalId` dono, para UIDs em `caregiverIds`, ou ADMIN. Criação apenas por PROFESSIONAL, sempre com `professionalId` igual ao próprio UID. `professionalId` é imutável após criado.
   - Qualquer coleção/documento sem regra explícita é **negado por padrão** (substitui o antigo modo de teste aberto).
@@ -24,7 +25,7 @@ não existem estão listados em "Pendências", não aqui.
 - Sem criptografia de campos sensíveis (CPF, histórico médico) — os tipos hoje não incluem CPF; se for adicionado, deve ser tratado antes de ir a produção.
 - Sem fluxo de consentimento LGPD nem "direito ao esquecimento" implementados.
 - Sem CI/CD ou headers de segurança (CSP, HSTS etc.).
-- **Testes automatizados**: existem 259 testes (unitários com mock de Firestore
+- **Testes automatizados**: existem 370 testes (unitários com mock de Firestore
   + regras via Firebase Emulator, ver `package.json` → `test`/`test:rules`).
   **Testes E2E (navegador, ponta a ponta) não existem** — `playwright` não é
   dependência do projeto; o script `test:e2e` foi removido do `package.json`
