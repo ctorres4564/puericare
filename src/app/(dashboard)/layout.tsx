@@ -19,6 +19,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     }
   }, [user, loading, router]);
 
+  // Cada papel tem sua área: o grupo (dashboard) é exclusivo do PROFESSIONAL.
+  useEffect(() => {
+    if (!loading && user && userProfile) {
+      if (userProfile.role === 'CAREGIVER') {
+        router.replace('/responsavel/dashboard');
+      } else if (userProfile.role === 'ADMIN') {
+        router.replace('/admin/dashboard');
+      }
+    }
+  }, [user, userProfile, loading, router]);
+
   // Tela de loading enquanto verifica autenticação
   if (loading) {
     return (
