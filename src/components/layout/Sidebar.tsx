@@ -93,7 +93,10 @@ export function Sidebar() {
 
       {/* Rodapé da sidebar */}
       <div className="px-3 pb-4 border-t border-white/10 pt-4">
-        <p className="px-3 text-xs" style={{ color: 'var(--color-sidebar-text)', opacity: 0.5 }}>
+        <p className="px-3 text-xs leading-snug" style={{ color: 'var(--color-sidebar-text)', opacity: 0.6 }}>
+          Ferramenta de apoio ao diagnóstico e à avaliação — não substitui o prontuário oficial.
+        </p>
+        <p className="px-3 pt-2 text-xs" style={{ color: 'var(--color-sidebar-text)', opacity: 0.5 }}>
           v0.1.0 · MVP
         </p>
       </div>
