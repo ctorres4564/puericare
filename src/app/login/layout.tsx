@@ -24,6 +24,9 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
             Sistema de Acompanhamento Pediátrico
           </p>
+          <p className="mt-2 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+            Ferramenta de apoio ao diagnóstico e à avaliação — não substitui o prontuário oficial.
+          </p>
         </div>
 
         {/* Conteúdo da página de auth */}

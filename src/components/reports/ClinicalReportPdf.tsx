@@ -270,9 +270,14 @@ export function ClinicalReportPdf({ model }: { model: ReportPdfModel }) {
 
         {/* Rodapé fixo em todas as páginas */}
         <View style={s.footer} fixed>
-          <Text>{model.footerChildName}</Text>
-          {model.reportDate !== '' && <Text>Emitido em {model.reportDate}</Text>}
-          <Text render={({ pageNumber, totalPages }) => `Página ${pageNumber} de ${totalPages}`} />
+          <Text style={s.footerDisclaimer}>
+            Documento de apoio ao diagnóstico e à avaliação — não substitui o prontuário oficial.
+          </Text>
+          <View style={s.footerRow}>
+            <Text>{model.footerChildName}</Text>
+            {model.reportDate !== '' && <Text>Emitido em {model.reportDate}</Text>}
+            <Text render={({ pageNumber, totalPages }) => `Página ${pageNumber} de ${totalPages}`} />
+          </View>
         </View>
       </Page>
     </Document>
