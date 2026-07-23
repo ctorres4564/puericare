@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { getFirebaseAuth } from '@/lib/firebase/client';
@@ -23,14 +23,14 @@ export default function SetupPage() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { role: 'PROFESSIONAL' },
   });
 
-  const role = watch('role');
+  const role = useWatch({ control, name: 'role' });
 
   const onSubmit = async (data: FormValues) => {
     setError(null);

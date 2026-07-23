@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { consultationSchema, type ConsultationFormValues } from '@/lib/validation/consultation';
 import { calculateAgeInDays, formatAgeInDays } from '@/lib/consultations/ageInDays';
@@ -39,14 +39,14 @@ export function ConsultationForm({
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors },
   } = useForm<ConsultationFormValues>({
     resolver: zodResolver(consultationSchema),
     defaultValues,
   });
 
-  const consultationDate = watch('consultationDate');
+  const consultationDate = useWatch({ control, name: 'consultationDate' });
   const ageInDays = consultationDate ? calculateAgeInDays(childBirthDate, consultationDate) : 0;
 
   const isDraft = status === 'draft';

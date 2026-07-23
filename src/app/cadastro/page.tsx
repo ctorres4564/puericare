@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
@@ -61,7 +61,7 @@ export default function CadastroPage() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<CadastroFormValues>({
     resolver: zodResolver(cadastroSchema),
@@ -70,7 +70,7 @@ export default function CadastroPage() {
     },
   });
 
-  const selectedRole = watch('role');
+  const selectedRole = useWatch({ control, name: 'role' });
 
   const onSubmit = async (data: CadastroFormValues) => {
     setServerError(null);
